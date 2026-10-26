@@ -196,6 +196,52 @@ def make_batches(sources, request, horizon):
     return batches, coverage
 
 
+def _parse_completion(response, evidence):
+    """Return a checked synthesis or a diagnostic without exposing raw model text."""
+    choices = response.get('choices')
+    choice = choices[0] if isinstance(choices, list) and choices else None
+    message = choice.get('message') if isinstance(choice, dict) else None
+    if not isinstance(message, dict):
+        return None, {'code': 'local_ai_invalid_response',
+                      'reason': 'LM Studio returned no usable assistant message. No synthesis was published.'}
+    content = message.get('content')
+    finish = choice.get('finish_reason')
+    diagnostic = {'finish_reason': finish[:80] if isinstance(finish, str) else None,
+                  'content_characters': len(content) if isinstance(content, str) else 0,
+                  'has_tool_calls': bool(message.get('tool_calls'))}
+    usage = response.get('usage')
+    details = usage.get('completion_tokens_details') if isinstance(usage, dict) else None
+    reasoning = details.get('reasoning_tokens') if isinstance(details, dict) else None
+    if isinstance(reasoning, int) and not isinstance(reasoning, bool) and reasoning >= 0:
+        diagnostic['reasoning_tokens'] = reasoning
+
+    def rejected(code, reason):
+        return None, {'code': code, 'reason': reason + ' No synthesis was published.',
+                      'diagnostics': diagnostic}
+
+    if finish == 'length':
+        return rejected('local_ai_output_truncated',
+                        'Generation reached its output-token limit before completing the answer. '
+                        'Check reasoning usage and the server model configuration; a chat-only thinking toggle '
+                        'may not affect API requests. Only increase output with sufficient loaded context.')
+    if finish != 'stop':
+        return rejected('local_ai_incomplete_output', 'LM Studio did not report a completed answer.')
+    if message.get('tool_calls'):
+        return rejected('local_ai_tool_call', 'The response contained an unexpected tool call.')
+    try:
+        decoded = json.loads(content)
+    except (ValueError, TypeError):
+        return rejected('local_ai_invalid_json', 'The completed answer was not valid JSON.')
+    try:
+        parsed = Synthesis.model_validate(decoded)
+    except ValueError:
+        return rejected('local_ai_invalid_synthesis', 'The JSON answer did not match the required evidence schema.')
+    if not quotes_match(parsed, evidence):
+        return rejected('local_ai_unmatched_quote',
+                        'A source ID or verbatim quotation did not match the excerpts supplied in this batch.')
+    return parsed, None
+
+
 async def synthesize_local(sources, request, horizon_context=None, on_progress=None):
     if settings.ai_provider != 'local':
         raise ProviderError('Local AI is not selected.', 'local_ai_disabled')
@@ -232,17 +278,10 @@ async def synthesize_local(sources, request, horizon_context=None, on_progress=N
                 evidence.setdefault(unit['id'], []).append(unit['excerpt'])
             audits.append({'request_sha256': hashlib.sha256(_json(payload).encode()).hexdigest(),
                            'sent_source_ids': sorted(evidence)})
-            try:
-                choice = response['choices'][0]
-                if choice.get('finish_reason') != 'stop' or choice['message'].get('tool_calls'):
-                    raise ValueError('Incomplete or tool-bearing response')
-                parsed = Synthesis.model_validate_json(choice['message']['content'])
-                if not quotes_match(parsed, evidence):
-                    raise ValueError('Unmatched quotation')
-            except (ValueError, TypeError, KeyError, IndexError):
+            parsed, rejection = _parse_completion(response, evidence)
+            if rejection:
                 return {**metadata, 'status': 'rejected', 'usage': usage, 'request_audit': audits,
-                        'reason': 'Local output was incomplete, invalid JSON, or quoted text outside the supplied excerpts. '
-                                  'No synthesis was published. Check thinking/output settings if generation was truncated.'}
+                        **rejection}
             claims.extend(parsed.claims); conflicts.extend(parsed.contradictions); unresolved.extend(parsed.unresolved)
     # Merge independent checked batches without inventing an uncited narrative.
     def unique(items, key):

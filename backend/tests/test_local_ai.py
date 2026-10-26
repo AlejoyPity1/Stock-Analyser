@@ -97,7 +97,7 @@ async def test_local_ai_works_with_paid_ai_blocked_and_uses_exact_model(local, m
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize('failure', ['quote', 'source', 'length', 'json', 'tool_calls', 'empty_choices', 'cross_batch_quote'])
+@pytest.mark.parametrize('failure', ['quote', 'source', 'length', 'json', 'schema', 'tool_calls', 'empty_choices', 'cross_batch_quote'])
 async def test_invalid_or_unseen_citations_are_not_published(local, monkeypatch, failure):
     def handler(request):
         if request.method == 'GET': return directory()
@@ -105,6 +105,7 @@ async def test_invalid_or_unseen_citations_are_not_published(local, monkeypatch,
         if failure == 'quote': data = answer('This sentence was never supplied to the model.')
         if failure == 'source': data = answer(source_id='invented-source')
         if failure == 'cross_batch_quote': data = answer('Unique end-of-document statement about revenue.')
+        if failure == 'schema': data = {'claims': 'This is not a list of evidence claims.'}
         choice = {'finish_reason': 'stop', 'message': {'content': json.dumps(data)}}
         if failure == 'length': choice['finish_reason'] = 'length'
         if failure == 'json': choice['message']['content'] = '```json\nnot JSON\n```'
@@ -115,6 +116,29 @@ async def test_invalid_or_unseen_citations_are_not_published(local, monkeypatch,
         {**SOURCES[0], 'text': TEXT * 200 + 'Unique end-of-document statement about revenue.'}]
     result = await synthesize_local(sources, ResearchRequest(symbol='TEST', use_ai=True))
     assert result['status'] == 'rejected'
+    assert result['code'] == {
+        'quote': 'local_ai_unmatched_quote', 'source': 'local_ai_unmatched_quote',
+        'length': 'local_ai_output_truncated', 'json': 'local_ai_invalid_json',
+        'schema': 'local_ai_invalid_synthesis',
+        'tool_calls': 'local_ai_tool_call', 'empty_choices': 'local_ai_invalid_response',
+        'cross_batch_quote': 'local_ai_unmatched_quote',
+    }[failure]
+    assert 'data' not in result
+
+
+@pytest.mark.asyncio
+async def test_reasoning_exhaustion_is_reported_without_publishing_model_text(local, monkeypatch):
+    def handler(request):
+        if request.method == 'GET': return directory()
+        return completion(usage={'completion_tokens': 1200, 'completion_tokens_details': {'reasoning_tokens': 1200}},
+                          choices=[{'finish_reason': 'length', 'message': {
+                              'content': '', 'reasoning_content': 'Private internal reasoning must not be published.'}}])
+    mock_transport(monkeypatch, handler)
+    result = await synthesize_local(SOURCES, ResearchRequest(symbol='TEST', use_ai=True))
+    assert result['status'] == 'rejected' and result['code'] == 'local_ai_output_truncated'
+    assert result['diagnostics'] == {'finish_reason': 'length', 'content_characters': 0,
+                                     'has_tool_calls': False, 'reasoning_tokens': 1200}
+    assert 'Private internal reasoning' not in json.dumps(result)
     assert 'data' not in result
 
 

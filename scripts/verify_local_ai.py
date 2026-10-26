@@ -23,9 +23,12 @@ async def verify():
     try:
         result = await synthesize_local(sources, ResearchRequest(symbol='TEST', horizon='3-6m', use_ai=True))
         passed = result['status'] == 'generated_quote_verified' and bool(result['data']['claims'])
+        diagnostic = {key: result[key] for key in ('status', 'code', 'reason', 'diagnostics', 'usage') if key in result}
+        if not passed and result['status'] == 'generated_quote_verified':
+            diagnostic.update(code='local_ai_empty_claims', reason='The answer passed validation but contained no claims.')
         return {'check': 'local-ai-protocol-and-quotation-check', 'synthetic_evidence': True,
                 'passed': passed, 'paid_api_calls': 0, 'financial_quality_evaluated': False,
-                'gpu_acceleration_verified': False, 'result': result}
+                'gpu_acceleration_verified': False, **diagnostic, 'result': result}
     except ProviderError as error:
         return {'passed': False, 'paid_api_calls': 0, 'model': settings.local_ai_model,
                 'code': error.code, 'reason': error.message}
