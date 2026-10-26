@@ -1,6 +1,6 @@
 # Estado de implementación
 
-The LM Studio connector uses `qwen/qwen3.5-9b`, structured English claims and bounded source excerpts. The user completed Windows installation/build/startup and the original synthetic check with the installed Q4_K_M model. A saved-source diagnostic identified Qwen shortening quotations in real AAPL research. The corrected local contract selects evidence IDs and the server copies exact source windows; the update and full saved-source reanalysis are controlled-tested, pending execution on the user's PC. GPU performance and broader financial quality remain unverified. See [LOCAL_AI.md](LOCAL_AI.md), [the Windows evidence](LOCAL_WINDOWS_CHECK.json) and [the initial chat check](LOCAL_MODEL_CHAT_CHECK.json). Paid AI remains independently blocked by default (`PAID_AI_ENABLED=false`); local failures never switch providers.
+The LM Studio connector uses `qwen/qwen3.5-9b`, structured English claims and bounded source excerpts. The user completed Windows installation/build/startup, the original synthetic check and the corrected real-source run with the installed Q4_K_M model. The evidence-ID correction completed **6/6 batches**, generating **16 claims from 14 sources** with zero paid calls or new source retrieval; it created a new record and preserved the original. The app was restarted after the update. Semantic support, GPU performance and broader financial quality remain unverified. See [LOCAL_AI.md](LOCAL_AI.md), [the Windows evidence](LOCAL_WINDOWS_CHECK.json) and [the initial chat check](LOCAL_MODEL_CHAT_CHECK.json). Paid AI remains independently blocked by default (`PAID_AI_ENABLED=false`); local failures never switch providers.
 
 **Prioridad del usuario:** análisis de la acción que pida en cada ocasión para **3–6 meses**. DCF como contexto de valor presente; noticias, resultados, catalizadores y riesgo de precio como foco del producto. Véase [PRODUCT_SCOPE.md](PRODUCT_SCOPE.md). El objetivo no implica que el pronóstico o la tesis automática ya estén implementados.
 
@@ -54,7 +54,7 @@ Fecha y evidencia reproducible: [LIVE_VALIDATION.json](LIVE_VALIDATION.json), ge
 
 ## Trabajo pendiente
 
-- Execute the citation-reference correction on Windows against real saved sources, then evaluate extraction fidelity, semantic support, GPU speed and broader thesis quality. The original synthetic check passed and non-verbatim real-source quotes were diagnosed. Comprehensive qualitative conclusions and semantic retrieval remain pending.
+- Review semantic support of the 16 generated real-source claims, then evaluate extraction fidelity, GPU speed and broader thesis quality. The original synthetic check and all 6 corrected real-source batches passed on Windows. Comprehensive qualitative conclusions and semantic retrieval remain pending.
 - Búsqueda web general multifuente, filiales/productos/competidores, lectura autorizada de medios originales y deduplicación semántica.
 - Cuantificación automatizada de noticias y comprobación de doble contabilización; hoy el usuario justifica los cambios y quedan auditados.
 - Cobertura trimestral de emisores extranjeros cuando SEC no ofrece esos hechos; GPRK y ASML no permiten construir TTM con la cobertura XBRL recuperada. No se inventan trimestres.

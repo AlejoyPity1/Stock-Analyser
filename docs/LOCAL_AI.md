@@ -2,7 +2,7 @@
 
 Use **LM Studio on the same Windows PC as Stock Analyser**. Confirmed model ID reported by the user's `/v1/models` request: **`qwen/qwen3.5-9b`**. `text-embedding-nomic-embed-text-v1.5` is an embedding model, not the synthesis model.
 
-The user completed the original synthetic structured-output/quotation check on Windows, installed and built the app, and opened the running interface. Screenshots identify the downloaded file as **Qwen3.5-9B-Q4_K_M.gguf**, although Q6_K was originally recommended. A saved-source diagnostic identified shortened quotations containing `...` and altered punctuation in real AAPL output. The replacement local contract selects evidence IDs and lets the server copy exact excerpts; controlled tests pass, but the correction still needs execution with the user's Qwen. GPU acceleration, speed and financial quality remain unverified. See [the Windows evidence record](LOCAL_WINDOWS_CHECK.json).
+The user completed Windows installation/build/startup and the original synthetic check with **Qwen3.5-9B-Q4_K_M.gguf**. A saved-source diagnostic identified shortened quotations containing `...` and altered punctuation in real AAPL output. After installing the evidence-ID correction, the user completed **all 6 planned local batches**, producing **16 claims referencing 14 sources**, with zero paid API calls and no new source retrieval. A new record was created and the original preserved; the user also restarted the app and reported Ready. GPU acceleration, speed, claim semantics and financial quality remain unverified. See [the Windows evidence record](LOCAL_WINDOWS_CHECK.json).
 
 ## Windows setup
 
@@ -57,7 +57,7 @@ The cloud workspace cannot connect to the Windows PC's localhost. This version a
 
 For a rejected saved research run, execute `scripts/diagnose_local_ai.py` on the Windows PC. It repeats **one** first-batch inference using the saved source text, original horizon and current local settings. It prints safe schema errors or explicitly unverified quotation mismatches and records whether the request hash matches the original first batch. It never retrieves new public sources, changes the research record, publishes a synthesis or relaxes literal quote validation. It is compatible with the initial application ZIP and can be installed as a single new script without restarting the app. Optional `--symbol` or `--record` selects a particular saved run; the default uses the latest research. The ignored `local-ai-diagnostic.json` contains the diagnostic. A fresh replay can differ from the original response and does not validate later batches.
 
-The user-reported Windows checks, controlled transport tests and real-source synthesis validation are distinct evidence. The synthetic check passed; real-source synthesis is still under diagnosis.
+The user-reported Windows checks and controlled transport tests are distinct evidence. Both the original synthetic check and the corrected full saved-source run passed their structured-output/citation checks. Semantic support and financial quality still need review.
 
 ## Updating the original Windows ZIP
 
