@@ -109,7 +109,7 @@ def test_research_endpoint_starts_on_running_event_loop(client,monkeypatch):
     from app.providers import sec,market
     async def company(symbol):return {'symbol':symbol,'name':'Controlled endpoint fixture','currency':'USD','filings':[],'statements':[]}
     async def quote(symbol):raise ProviderError('No controlled quote')
-    async def news(*args):return [{'id':'controlled-news','title':'Controlled endpoint source','publisher':'Controlled fixture','url':'https://example.org/test','read_status':'abstract_only','summary':'Controlled test only','full_text':False}]
+    async def news(*args):return [{'id':'controlled-news','title':'TEST controlled endpoint source','publisher':'Controlled fixture','url':'https://example.org/test','read_status':'abstract_only','summary':'Controlled test only','full_text':False}]
     monkeypatch.setattr(sec,'company',company);monkeypatch.setattr(market,'quote',quote);monkeypatch.setattr(market,'news',news)
     response=client.post('/research',json={'symbol':'TEST','mode':'quick','use_ai':False})
     assert response.status_code==202

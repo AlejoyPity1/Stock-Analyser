@@ -15,6 +15,7 @@ from .providers import sec, market, ProviderError
 from .store import get, put, now, records
 from .synthesis import SYSTEM, Claim, Conflict, Synthesis, format_synthesis, quotes_match
 from .local_ai import synthesize_local
+from .research_quality import screen_sources
 
 class ResearchRequest(BaseModel):
     model_config=ConfigDict(extra='forbid')
@@ -44,9 +45,9 @@ def progress(id,**fields):
     job.update(fields,updated_at=now()); put(id,'research',job['symbol'],job)
     return job
 
-async def synthesize(sources,request,horizon_context=None,on_progress=None):
+async def synthesize(sources,request,horizon_context=None,on_progress=None,company_context=None):
     if settings.ai_provider == 'local':
-        return await synthesize_local(sources,request,horizon_context,on_progress)
+        return await synthesize_local(sources,request,horizon_context,on_progress,company_context)
     if settings.ai_provider != 'openai':
         raise ProviderError('AI is disabled. Select AI_PROVIDER=local to use LM Studio. Paid AI remains blocked.','paid_ai_disabled')
     if not settings.paid_ai_enabled: raise ProviderError('Paid AI is disabled. No request was made.','paid_ai_disabled')
@@ -109,6 +110,8 @@ async def run(id,request):
             limit=min(settings.research_max_articles,10 if request.mode=='quick' else 50)
             # Preserve source diversity; do not let news displace official filings or vice versa.
             official=[s for s in unique if s['publisher']=='SEC EDGAR']; media=[s for s in unique if s['publisher']!='SEC EDGAR']
+            media,screening=screen_sources(media,request.symbol,company)
+            progress(id,source_screening=screening)
             sources=official[:min(5,limit)]
             sources+=media[:max(0,limit-len(sources))]
             sources+=official[5:5+max(0,limit-len(sources))]
@@ -126,7 +129,7 @@ async def run(id,request):
             if request.use_ai:
                 progress(id,stage='Síntesis de evidencias con IA',sources=sources,stats=stats)
                 try:
-                    ai=await synthesize(sources,request,job['investment_horizon'],lambda message:progress(id,stage=message))
+                    ai=await synthesize(sources,request,job['investment_horizon'],lambda message:progress(id,stage=message),company_context=company)
                     if ai['status']=='generated_quote_verified':
                         stats['used_for_synthesis']=len(ai['data']['used_source_ids'])
                 except ProviderError as e: ai={'status':'unavailable','provider':settings.ai_provider,'model':settings.local_ai_model if settings.ai_provider=='local' else settings.research_model,'code':e.code,'reason':e.message}

@@ -205,6 +205,36 @@ test("controlled research dossier renders sources and exports JSON and printable
   expect(pdf.length).toBeGreaterThan(5000);
 });
 
+test("research report shows period-labelled unscaled financial facts and withheld-statement notice", async ({ page }) => {
+  const fact = (value: number, unit: string) => ({ value, unit, source: "https://www.sec.gov/Archives/controlled", filed: "2026-05-01", quality: "reported" });
+  const fixture = {
+    id: "controlled-grounded-report", symbol: "TEST", status: "completed", created_at: "2026-10-26T12:00:00Z",
+    request: { mode: "quick" }, company: { name: "CONTROLLED GROUNDED FIXTURE" }, sources: [],
+    report: { summary: "Controlled financial display fixture.", limitations: [] },
+    ai: { status: "generated_quote_verified", provider: "local", model: "controlled-test",
+      data: { summary: "Controlled extraction test.", claims: [], bull_case: [], bear_case: [], contradictions: [], unresolved: [],
+        quality_control: { withheld_count: 1 },
+        financial_facts: [{ period_type: "quarter", period_start: "2025-12-28", period_end: "2026-03-28", values: {
+          net_income: fact(29578000000, "USD"), eps: fact(2.01, "USD/shares"), shares: fact(14725873000, "shares"),
+        }}],
+      }, billing: { estimated_cost_usd: 0 } },
+  };
+  await page.route("**/api/records?kind=research", route => route.fulfill({ json: [{ id: fixture.id, symbol: fixture.symbol, created_at: fixture.created_at, data: fixture }] }));
+  await page.route("**/api/records/controlled-grounded-report", route => route.fulfill({ json: fixture }));
+  await page.route("**/api/reports/controlled-grounded-report", route => route.fulfill({ json: { record: fixture } }));
+  await page.goto("/");
+  await page.getByRole("button", { name: "Informes", exact: true }).click();
+  await page.getByLabel("Investigaciones guardadas").selectOption(fixture.id);
+  const financial = page.getByRole("region", { name: "Reported financial context" });
+  await expect(financial).toContainText("2025-12-28 to 2026-03-28");
+  await expect(financial).toContainText("29,578,000,000");
+  await expect(financial).toContainText("14,725,873,000");
+  await expect(financial).toContainText("USD/shares");
+  await expect(financial).toContainText("1 numerical financial statement(s) from the AI were withheld");
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+});
+
 test("search supports keyboard selection, arbitrary tickers and visible provider errors", async ({
   page,
 }) => {

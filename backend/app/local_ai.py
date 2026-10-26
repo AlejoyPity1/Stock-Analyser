@@ -14,6 +14,7 @@ from .config import settings, loopback_ai_url
 from .horizon import investment_horizon
 from .providers import ProviderError
 from .synthesis import Claim, Conflict, Synthesis, format_synthesis, quotes_match
+from .research_quality import compact_facts, financial_facts, numerical_financial_claim, screen_sources
 
 
 class EvidenceClaim(BaseModel):
@@ -42,6 +43,7 @@ class EvidenceSelection(BaseModel):
 class ParsedSelection(NamedTuple):
     synthesis: Synthesis
     evidence_ids: list[str]
+    withheld: list[dict]
 
 
 LOCAL_SYSTEM = (
@@ -50,6 +52,9 @@ LOCAL_SYSTEM = (
     'has an evidence_id. Cite a claim using one exact evidence_id from THIS batch. '
     'The application copies that window verbatim into the citation; do not write or shorten quotes. '
     'Choose a window that supports the entire claim. Label facts, inferences and hypotheses. '
+    'Financial_context contains period-labelled SEC facts, shown separately by the application. '
+    'Do not restate numerical financial figures in claims or mechanisms; explain effects qualitatively. '
+    'For news abstracts retain attribution and uncertainty. State a financial causal mechanism, not a category label. '
     'Preserve uncertainty and units. Do not assign table numbers to a period or unit unless '
     'the excerpt identifies them; leave ambiguous tables unresolved. Respect the supplied '
     '3/6-month investment window. Publication dates are not event dates. Do not invent numbers, '
@@ -57,7 +62,9 @@ LOCAL_SYSTEM = (
     'valuations or change assumptions. An abstract is not a full article. A contradiction '
     'requires two evidence IDs from DISTINCT source IDs; differences in period, units or '
     'definitions are not automatically contradictions. Be concise: at most 3 claims, '
-    '3 unresolved questions and 1 contradiction per batch. Return only the requested JSON.'
+    '3 unresolved questions and 1 contradiction per batch. A trailing ellipsis does not make '
+    'an explicitly stated number unknown. Use neutral language, not sensational price predictions. '
+    'Return only the requested JSON.'
 )
 
 
@@ -88,7 +95,7 @@ _FINANCIAL = re.compile(
 )
 LIMITATIONS = [
     'Citations copy the selected evidence windows verbatim; a valid reference does not verify that the window supports the interpretation.',
-    'Excerpt selection uses bounded keyword windows, not semantic retrieval or exhaustive document analysis.',
+    'Complete-sentence keyword windows remain selective, not semantic retrieval or exhaustive document analysis.',
     'Contradictions are assessed within batches; absence of a detected conflict is not proof of consistency.',
     'The model does not update valuations or produce validated price predictions.',
 ]
@@ -176,17 +183,39 @@ def _prefix(text, byte_limit):
 def _windows(text, byte_limit):
     if len(text.encode('utf-8')) <= byte_limit:
         return [(0, len(text), text)]
-    # Exact contiguous windows. Their offsets and hashes are kept for audit.
-    width = max(80, byte_limit // 3)
+    # Expand around complete sentences; never begin at an arbitrary character
+    # after a negation, appointment date or table header. Oversize sentences are
+    # omitted rather than manufacturing a self-contained-looking fragment.
+    boundaries = []; start = 0
+    abbreviations = {'mr', 'mrs', 'ms', 'dr', 'inc', 'corp', 'ltd', 'co', 'u.s', 'e.g', 'i.e', 'no', 's.a', 'n.v', 'n.a', 's.e', 'a.g'}
+    for match in re.finditer(r'[.!?][\"\u201d\u2019\)]*(?=\s|$)|\n\s*\n', text):
+        token = re.search(r'([A-Za-z][A-Za-z.]*)[.!?][\"\u201d\u2019\)]*$', text[max(start, match.start() - 20):match.end()])
+        if token and (token.group(1).lower() in abbreviations or len(token.group(1)) == 1):
+            continue
+        left = start
+        while left < match.end() and text[left].isspace():
+            left += 1
+        if left < match.end():
+            boundaries.append((left, match.end()))
+        start = match.end()
     candidates = []
-    for match in list(_FINANCIAL.finditer(text))[:200]:
-        start = max(0, match.start() - width // 4)
-        excerpt = _prefix(text[start:], byte_limit)
-        score = len({m.group().lower() for m in _FINANCIAL.finditer(excerpt)})
-        candidates.append((score, start, start + len(excerpt), excerpt))
+    for index, (left, right) in enumerate(boundaries):
+        sentence = text[left:right]
+        if len(sentence.encode()) > byte_limit:
+            continue
+        # Flattened financial tables are handled by structured facts, not prose inference.
+        numbers = len(re.findall(r'\b\d[\d,.]*\b', sentence))
+        if numbers >= 12 and numbers > len(re.findall(r'[A-Za-z]{3,}', sentence)) // 3:
+            continue
+        score = len({m.group().lower() for m in _FINANCIAL.finditer(sentence)})
+        score += 4 * len(re.findall(r'chief executive|appointed|transition|guidance|outlook', sentence, re.I))
+        if index and len(text[boundaries[index - 1][0]:right].encode()) <= byte_limit:
+            left = boundaries[index - 1][0]
+        if index + 1 < len(boundaries) and len(text[left:boundaries[index + 1][1]].encode()) <= byte_limit:
+            right = boundaries[index + 1][1]
+        candidates.append((score, left, right, text[left:right]))
     if not candidates:
-        excerpt = _prefix(text, byte_limit)
-        return [(0, len(excerpt), excerpt)]
+        return []
     result = []
     for _, start, end, excerpt in sorted(candidates, key=lambda row: (-row[0], row[1])):
         if not any(start < old_end and end > old_start for old_start, old_end, _ in result):
@@ -196,13 +225,18 @@ def _windows(text, byte_limit):
     return sorted(result)
 
 
-def make_batches(sources, request, horizon):
+def make_batches(sources, request, horizon, company_context=None):
     _config()
+    original_source_count = len(sources)
+    sources, screening = screen_sources(sources, request.symbol, company_context)
+    facts = financial_facts(company_context, horizon.get('as_of'))
     schema = EvidenceSelection.model_json_schema()
     compact_horizon = {k: horizon[k] for k in (
         'code', 'as_of', 'min_months', 'max_months', 'window_start_date', 'window_end_date'
     ) if k in horizon}
     base = {'symbol': request.symbol, 'investment_horizon': compact_horizon, 'sources': []}
+    if facts:
+        base['financial_context'] = compact_facts(facts)
     # UTF-8 bytes conservatively bound ordinary byte-fallback tokenization. Reserve
     # schema, chat-template overhead, output, and room for non-text special tokens.
     overhead = len(LOCAL_SYSTEM.encode()) + len(_json(schema).encode()) + 512
@@ -263,9 +297,10 @@ def make_batches(sources, request, horizon):
     truncated = [s['id'] for s, text, _ in readable
                  if s['id'] in included and sum(end - start for start, end in ranges[s['id']]) < len(text)]
     coverage = {
-        'selection_method': 'bounded_keyword_windows', 'context_tokens_configured': settings.local_ai_context_tokens,
+        'selection_method': 'complete_sentence_keyword_windows', 'context_tokens_configured': settings.local_ai_context_tokens,
         'input_budget_utf8_bytes_per_batch': available, 'output_tokens_per_batch': settings.local_ai_max_output_tokens,
-        'selected_source_count': len(sources), 'readable_source_count': len(readable),
+        'selected_source_count': original_source_count, 'readable_source_count': len(readable),
+        'source_screening': screening,
         'included_source_ids': sorted(included), 'omitted_readable_source_ids': sorted(seen - included),
         'truncated_source_ids': truncated, 'batch_count': len(batches),
         'citation_method': 'server_copied_evidence_ids',
@@ -352,14 +387,31 @@ def _parse_completion(response, references):
     if not quotes_match(parsed, evidence):
         return rejected('local_ai_unmatched_quote',
                         'A source ID or verbatim quotation did not match the excerpts supplied in this batch.')
-    return ParsedSelection(parsed, sorted(set(identifiers))), None
+    withheld = []
+    safe_claims = []
+    for item in parsed.claims:
+        if numerical_financial_claim(item.text, item.financial_mechanism):
+            withheld.append({'type': 'claim', 'source_id': item.source_id,
+                             'reason': 'Numerical financial statement withheld; use the structured period/unit-labelled financial facts.',
+                             'text_sha256': hashlib.sha256(item.text.encode()).hexdigest()})
+        else:
+            safe_claims.append(item)
+    safe_conflicts = []
+    for item in parsed.contradictions:
+        if numerical_financial_claim(item.description):
+            withheld.append({'type': 'contradiction', 'reason': 'Numerical financial comparison requires structured financial facts.'})
+        else:
+            safe_conflicts.append(item)
+    parsed = Synthesis(claims=safe_claims, contradictions=safe_conflicts, unresolved=parsed.unresolved)
+    return ParsedSelection(parsed, sorted(set(identifiers)), withheld), None
 
 
-async def synthesize_local(sources, request, horizon_context=None, on_progress=None):
+async def synthesize_local(sources, request, horizon_context=None, on_progress=None, company_context=None):
     if settings.ai_provider != 'local':
         raise ProviderError('Local AI is not selected.', 'local_ai_disabled')
     horizon = horizon_context or investment_horizon(request.horizon)
-    batches, coverage = make_batches(sources, request, horizon)
+    batches, coverage = make_batches(sources, request, horizon, company_context)
+    facts = financial_facts(company_context, horizon.get('as_of'))
     metadata = {'provider': 'local', 'model': settings.local_ai_model, 'coverage': coverage,
                 'billing': {'provider': 'local', 'model': settings.local_ai_model,
                             'estimated_cost_usd': 0, 'price_source': 'Local inference; electricity/hardware costs excluded.'},
@@ -368,7 +420,7 @@ async def synthesize_local(sources, request, horizon_context=None, on_progress=N
         return {**metadata, 'status': 'unavailable', 'reason': 'No readable source excerpts are available for local analysis.'}
     loop = asyncio.get_running_loop()
     gate = _gates.setdefault(loop, asyncio.Semaphore(1))
-    claims = []; conflicts = []; unresolved = []; usage = []; audits = []; response_models = []
+    claims = []; conflicts = []; unresolved = []; usage = []; audits = []; response_models = []; withheld = []
     started = time.monotonic()
     async with gate:
         await check_local_model()
@@ -394,6 +446,7 @@ async def synthesize_local(sources, request, horizon_context=None, on_progress=N
             claims.extend(parsed.synthesis.claims)
             conflicts.extend(parsed.synthesis.contradictions)
             unresolved.extend(parsed.synthesis.unresolved)
+            withheld.extend(parsed.withheld)
     # Merge independent checked batches without inventing an uncited narrative.
     def unique(items, key):
         seen = set(); result = []
@@ -408,6 +461,13 @@ async def synthesize_local(sources, request, horizon_context=None, on_progress=N
                        unresolved=list(dict.fromkeys(unresolved))[:12])
     coverage['claims_omitted_by_output_limit'] = max(0, len(all_claims) - 30)
     coverage['contradictions_omitted_by_output_limit'] = max(0, len(all_conflicts) - 10)
-    return {**metadata, 'status': 'generated_quote_verified', 'data': format_synthesis(merged),
+    data = format_synthesis(merged)
+    data['financial_facts'] = facts
+    data['quality_control'] = {'withheld_count': len(withheld), 'withheld': withheld[:40],
+                               'financial_figures_source': 'structured_sec_facts',
+                               'semantic_quality_certified': False}
+    if withheld:
+        data['summary'] += f' {len(withheld)} numerical financial statement(s) withheld; use the structured financial table.'
+    return {**metadata, 'status': 'generated_quote_verified', 'data': data,
             'usage': usage, 'request_audit': audits, 'response_model_ids': sorted(set(response_models)),
             'duration_seconds': round(time.monotonic() - started, 3)}

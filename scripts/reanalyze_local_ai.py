@@ -30,7 +30,8 @@ async def reanalyze(symbol=None, record_id=None, on_progress=None):
     if not job.get('investment_horizon'):
         return {'passed': False, 'code': 'saved_horizon_missing'}
     request = ResearchRequest.model_validate(job['request']).model_copy(update={'use_ai': True})
-    result = await synthesize_local(job['sources'], request, job['investment_horizon'], on_progress)
+    result = await synthesize_local(job['sources'], request, job['investment_horizon'], on_progress,
+                                    company_context=job.get('financial_snapshot'))
     passed = result['status'] == 'generated_quote_verified' and bool(result['data']['claims'])
     summary = {'check': 'saved-source-local-reanalysis', 'passed': passed,
                'original_record_id': job['id'], 'symbol': request.symbol,
@@ -38,7 +39,10 @@ async def reanalyze(symbol=None, record_id=None, on_progress=None):
                'original_record_modified': False, 'financial_quality_evaluated': False,
                'status': result['status'], 'citation_method': result['coverage']['citation_method'],
                'completed_batches': len(result.get('usage', [])),
-               'planned_batches': result['coverage']['batch_count'], 'ai': result}
+               'planned_batches': result['coverage']['batch_count'],
+               'structured_financial_periods': len(result.get('data', {}).get('financial_facts', [])),
+               'withheld_financial_statements': result.get('data', {}).get('quality_control', {}).get('withheld_count', 0),
+               'excluded_sources': result['coverage']['source_screening'].get('excluded_count', 0), 'ai': result}
     if not passed:
         summary.update({key: result[key] for key in ('code', 'reason', 'diagnostics') if key in result})
         if result['status'] == 'generated_quote_verified':

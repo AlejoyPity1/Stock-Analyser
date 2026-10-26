@@ -27,6 +27,7 @@ def inspect_response(response, evidence, references=None):
         if rejection:
             return {'passed': False, **rejection}
         return {'passed': bool(parsed.synthesis.claims), 'claim_count': len(parsed.synthesis.claims),
+                'withheld_financial_statements': len(parsed.withheld),
                 'selected_evidence_ids': parsed.evidence_ids,
                 'code': 'generated_quote_verified' if parsed.synthesis.claims else 'local_ai_empty_claims'}
     choices = response.get('choices')
@@ -113,7 +114,10 @@ async def diagnose_saved(symbol=None, record_id=None):
         return {'passed': False, 'code': 'saved_horizon_missing'}
     # The original batch builder and request contract also exist in the initial ZIP.
     # This script can therefore diagnose it without replacing backend files/restarting.
-    batches, _ = make_batches(job['sources'], request, horizon)
+    if hasattr(local_ai, 'financial_facts'):
+        batches, _ = make_batches(job['sources'], request, horizon, company_context=job.get('financial_snapshot'))
+    else:
+        batches, _ = make_batches(job['sources'], request, horizon)
     if not batches:
         return {'passed': False, 'code': 'no_readable_evidence'}
     batch = batches[0]

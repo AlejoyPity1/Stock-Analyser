@@ -12,6 +12,7 @@ import MetricPanel from "../components/MetricPanel";
 import FinancialStatements from "../components/FinancialStatements";
 import ReportSections from "../components/ReportSections";
 import HorizonSummary from "../components/HorizonSummary";
+import ResearchFinancialFacts from "../components/ResearchFinancialFacts";
 import CatalystBoard from "../components/CatalystBoard";
 import PriceScenarios from "../components/PriceScenarios";
 import { useEffect, useRef, useState } from "react";
@@ -2093,6 +2094,7 @@ export default function Page() {
                   {job.ai?.status === "generated_quote_verified" ? (
                     <>
                       <p>{job.ai.data.summary}</p>
+                      <ResearchFinancialFacts periods={job.ai.data.financial_facts} withheld={job.ai.data.quality_control?.withheld_count || 0} />
                       {job.ai.data.claims.map((c: any, i: number) => (
                         <section className="claim" key={i}>
                           <Badge>{c.kind}</Badge>

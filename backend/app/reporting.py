@@ -101,6 +101,16 @@ def render_pdf(report):
         if ai.get('reason'): story.append(paragraph(ai['reason']))
         if ai.get('status') == 'generated_quote_verified':
             story.append(paragraph(ai['data']['summary']))
+            if ai['data'].get('financial_facts'):
+                story.append(paragraph('Reported financial context (structured SEC facts)', 'Heading2'))
+                for period in ai['data']['financial_facts']:
+                    story.append(paragraph(f"{period['period_type']} · {period['period_start']} to {period['period_end']}", 'Heading3'))
+                    for metric, fact in period['values'].items():
+                        story.append(paragraph(f"{metric}: {fact['value']:,} {fact['unit']} · {fact.get('quality', 'reported')} · source: {fact['source']}"))
+                story.append(paragraph('Values are unscaled. Share counts are weighted-average diluted shares for the stated period, not current shares outstanding.'))
+            withheld = ai['data'].get('quality_control', {}).get('withheld_count', 0)
+            if withheld:
+                story.append(paragraph(f'{withheld} numerical financial statement(s) from the model were withheld; use structured financial facts and review the remaining interpretations.'))
             for claim in ai['data']['claims']:
                 story.append(paragraph(f"{claim['kind']} · {claim['side']} · {claim['source_id']}", 'Heading3'))
                 story.append(paragraph(claim['text']))

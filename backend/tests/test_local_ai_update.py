@@ -1,5 +1,6 @@
 """The Windows handoff must preserve credentials/data and restore code on failure."""
 import importlib.util
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -16,7 +17,9 @@ def installation(tmp_path):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text('controlled fixture')
     for name in updater.FILES:
-        (tmp_path / name).write_bytes(b'# original code fixture\n')
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b'# original code fixture\n')
     (tmp_path / '.env').write_bytes(b'LOCAL_CONFIG_SENTINEL')
     (tmp_path / 'stock.db').write_bytes(b'LOCAL_DATABASE_SENTINEL')
     return tmp_path
@@ -24,7 +27,7 @@ def installation(tmp_path):
 
 def source(url):
     relative = url.removeprefix(updater.BASE_URL)
-    return (ROOT / relative).read_bytes()
+    return subprocess.run(['git', 'show', f'{updater.REVISION}:{relative}'], cwd=ROOT, check=True, capture_output=True).stdout
 
 
 def test_update_verifies_every_download_before_replacing_any_code(tmp_path):
