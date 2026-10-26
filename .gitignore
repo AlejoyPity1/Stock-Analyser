@@ -16,3 +16,5 @@ test-results/
 *.tsbuildinfo
 local-ai-check.json
 local-ai-diagnostic.json
+local-ai-reanalysis.json
+.local-ai-backups/

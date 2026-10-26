@@ -8,7 +8,7 @@ import pytest
 
 from app.config import Settings, settings
 from app.horizon import investment_horizon
-from app.local_ai import local_base_url, make_batches, synthesize_local
+from app.local_ai import LOCAL_SYSTEM, completion_payload, local_base_url, make_batches, synthesize_local
 from app.providers import ProviderError
 from app.research import ResearchRequest, synthesize
 
@@ -20,6 +20,13 @@ def answer(quote=TEXT, source_id='fixture-source'):
     return {'claims': [{'side': 'neutral', 'kind': 'reported_fact',
                         'text': 'The source reports higher revenue.', 'source_id': source_id,
                         'evidence_quote': quote, 'financial_mechanism': 'Review revenue persistence; no valuation change.'}],
+            'unresolved': ['What guidance will management provide?'], 'contradictions': []}
+
+
+def evidence_answer(evidence_id='E1'):
+    return {'claims': [{'side': 'neutral', 'kind': 'reported_fact',
+                        'text': 'The source reports higher revenue.', 'evidence_id': evidence_id,
+                        'financial_mechanism': 'Review revenue persistence; no valuation change.'}],
             'unresolved': ['What guidance will management provide?'], 'contradictions': []}
 
 
@@ -47,7 +54,7 @@ def directory():
 
 def completion(data=None, **overrides):
     return httpx.Response(200, json={'model': 'qwen3.5-9b', 'usage': {'prompt_tokens': 100, 'completion_tokens': 80},
-                                    'choices': [{'finish_reason': 'stop', 'message': {'content': json.dumps(data or answer())}}],
+                                    'choices': [{'finish_reason': 'stop', 'message': {'content': json.dumps(data if data is not None else evidence_answer())}}],
                                     **overrides})
 
 
@@ -101,10 +108,13 @@ async def test_local_ai_works_with_paid_ai_blocked_and_uses_exact_model(local, m
 async def test_invalid_or_unseen_citations_are_not_published(local, monkeypatch, failure):
     def handler(request):
         if request.method == 'GET': return directory()
-        data = answer()
-        if failure == 'quote': data = answer('This sentence was never supplied to the model.')
-        if failure == 'source': data = answer(source_id='invented-source')
-        if failure == 'cross_batch_quote': data = answer('Unique end-of-document statement about revenue.')
+        data = evidence_answer()
+        if failure == 'quote': data['claims'][0]['evidence_quote'] = 'Net income ... changed punctuation.'
+        if failure == 'source': data = evidence_answer('invented-source')
+        if failure == 'cross_batch_quote':
+            data = evidence_answer('E20')
+            batch = json.loads(json.loads(request.content)['messages'][1]['content'])
+            assert 'E20' not in {unit['evidence_id'] for unit in batch['sources']}
         if failure == 'schema': data = {'claims': 'This is not a list of evidence claims.'}
         choice = {'finish_reason': 'stop', 'message': {'content': json.dumps(data)}}
         if failure == 'length': choice['finish_reason'] = 'length'
@@ -113,15 +123,15 @@ async def test_invalid_or_unseen_citations_are_not_published(local, monkeypatch,
         return completion(choices=[] if failure == 'empty_choices' else [choice])
     mock_transport(monkeypatch, handler)
     sources = SOURCES if failure != 'cross_batch_quote' else [
-        {**SOURCES[0], 'text': TEXT * 200 + 'Unique end-of-document statement about revenue.'}]
+        {**SOURCES[0], 'id': f'source-{i}', 'text': TEXT * 200} for i in range(20)]
     result = await synthesize_local(sources, ResearchRequest(symbol='TEST', use_ai=True))
     assert result['status'] == 'rejected'
     assert result['code'] == {
-        'quote': 'local_ai_unmatched_quote', 'source': 'local_ai_unmatched_quote',
+        'quote': 'local_ai_invalid_synthesis', 'source': 'local_ai_unknown_evidence',
         'length': 'local_ai_output_truncated', 'json': 'local_ai_invalid_json',
         'schema': 'local_ai_invalid_synthesis',
         'tool_calls': 'local_ai_tool_call', 'empty_choices': 'local_ai_invalid_response',
-        'cross_batch_quote': 'local_ai_unmatched_quote',
+        'cross_batch_quote': 'local_ai_unknown_evidence',
     }[failure]
     assert 'data' not in result
 
@@ -208,6 +218,9 @@ def test_batching_bounds_utf8_context_and_discloses_omissions(local, monkeypatch
         for unit in batch['sources']:
             original = next(s['text'] for s in sources if s['id'] == unit['id'])
             assert unit['excerpt'] == original[unit['start']:unit['end']]
+        payload = completion_payload(batch)
+        schema_bytes = len(json.dumps(payload['response_format']['json_schema']['schema'], ensure_ascii=False, separators=(',', ':')).encode())
+        assert len(encoded) + schema_bytes + len(LOCAL_SYSTEM.encode()) + 512 + settings.local_ai_max_output_tokens <= settings.local_ai_context_tokens
 
 
 @pytest.mark.asyncio

@@ -18,7 +18,7 @@ spec.loader.exec_module(diagnostic)
 
 def test_whitespace_only_quote_difference_stays_rejected():
     evidence = {'fixture-source': [TEXT.replace('100 million', '100\u00a0million')]}
-    result = diagnostic.inspect_response(completion().json(), evidence)
+    result = diagnostic.inspect_response(completion(answer()).json(), evidence)
     assert result['passed'] is False and result['code'] == 'local_ai_unmatched_quote'
     mismatch = result['unverified_quote_mismatches'][0]
     assert mismatch['whitespace_normalized_match'] is True

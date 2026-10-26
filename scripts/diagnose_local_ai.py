@@ -12,6 +12,7 @@ from pydantic import ValidationError
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'backend'))
 from app.config import settings
+from app import local_ai
 from app.local_ai import _json, _request, check_local_model, make_batches
 from app.providers import ProviderError
 from app.research import ResearchRequest
@@ -19,8 +20,15 @@ from app.store import get, records
 from app.synthesis import SYSTEM, Synthesis, quotes_match
 
 
-def inspect_response(response, evidence):
+def inspect_response(response, evidence, references=None):
     """Explain a rejection without printing internal reasoning or accepting fuzzy quotes."""
+    if references is not None:
+        parsed, rejection = local_ai._parse_completion(response, references)
+        if rejection:
+            return {'passed': False, **rejection}
+        return {'passed': bool(parsed.synthesis.claims), 'claim_count': len(parsed.synthesis.claims),
+                'selected_evidence_ids': parsed.evidence_ids,
+                'code': 'generated_quote_verified' if parsed.synthesis.claims else 'local_ai_empty_claims'}
     choices = response.get('choices')
     choice = choices[0] if isinstance(choices, list) and choices else None
     message = choice.get('message') if isinstance(choice, dict) else None
@@ -114,6 +122,10 @@ async def diagnose_saved(symbol=None, record_id=None):
                'response_format': {'type': 'json_schema', 'json_schema': {
                    'name': 'research', 'strict': True, 'schema': Synthesis.model_json_schema()}},
                'temperature': 0.2, 'max_tokens': settings.local_ai_max_output_tokens, 'stream': False}
+    references = None
+    if hasattr(local_ai, 'completion_payload'):
+        payload = local_ai.completion_payload(batch)
+        references = {unit['evidence_id']: unit for unit in batch['sources']}
     fingerprint = hashlib.sha256(_json(payload).encode()).hexdigest()
     prior = job.get('ai', {}).get('request_audit') or []
     expected = prior[0].get('request_sha256') if prior else None
@@ -129,7 +141,7 @@ async def diagnose_saved(symbol=None, record_id=None):
             'same_payload_as_original_first_batch': fingerprint == expected if expected else None,
             'paid_api_calls': 0, 'source_retrieval_calls': 0, 'research_record_modified': False,
             'scope': 'One fresh local inference on saved sources; does not certify the original response or publish a synthesis.',
-            **inspect_response(response, evidence)}
+            **inspect_response(response, evidence, references)}
 
 
 if __name__ == '__main__':
