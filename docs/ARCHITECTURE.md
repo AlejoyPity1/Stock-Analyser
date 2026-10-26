@@ -66,11 +66,12 @@ Límites operativos: un proceso backend, caché local por entorno, base personal
 
 ## Local AI connector
 
-- `local_ai.py`: same-machine loopback endpoint validation, exact model check, serialized GPU requests, conservative context budgets, deterministic evidence windows and per-batch citation validation.
+- `local_ai.py`: same-machine loopback endpoint validation, exact model check, serialized GPU requests, conservative context/schema/ID budgets and deterministic evidence windows. A local-only schema restricts selection to batch evidence IDs; the server copies exact windows into the unchanged shared report schema. Unknown references, model-written quote overrides and same-source contradictions are rejected.
 - `synthesis.py`: shared output schema, English system instructions, literal quote matching against supplied excerpts, and deterministic formatting of checked claims.
 - `AI_PROVIDER=disabled|local|openai`: explicit routing. Paid mode additionally requires its own authorization/configuration; local failure does not change provider.
 - `POST /settings/local-ai/check`: configured model ID listing only; no inference or GPU-success claim.
 - `scripts/verify_local_ai.py`: synthetic schema/quotation check run on the Windows PC; no database fixtures or paid API calls.
+- `scripts/update_local_ai.py`: pinned, hash-checked three-file update with code backups and rollback. `reanalyze_local_ai.py` evaluates saved sources with the original horizon and creates a new record only after every batch passes; old records are preserved. The running app uses new code after restarting.
 - Report `evidence-2.3`: preserves local model/provider, excerpt coverage/omissions and an AI claim/quotation annex in PDF.
 
 [LOCAL_AI.md](LOCAL_AI.md) describes implementation limits and validation still needed on Windows.

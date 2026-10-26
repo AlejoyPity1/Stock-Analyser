@@ -1,6 +1,6 @@
 # Estado de implementación
 
-The LM Studio connector uses `qwen/qwen3.5-9b`, structured English claims, bounded source excerpts and literal quote checks. The user completed Windows installation/build/startup and the synthetic structured-output check with the installed Q4_K_M model. Real AAPL data/source collection works on that PC, but its first AI synthesis was rejected; diagnosis is pending. GPU performance and broader financial quality remain unverified. See [LOCAL_AI.md](LOCAL_AI.md), [the Windows evidence](LOCAL_WINDOWS_CHECK.json) and [the initial chat check](LOCAL_MODEL_CHAT_CHECK.json). Paid AI remains independently blocked by default (`PAID_AI_ENABLED=false`); local failures never switch providers.
+The LM Studio connector uses `qwen/qwen3.5-9b`, structured English claims and bounded source excerpts. The user completed Windows installation/build/startup and the original synthetic check with the installed Q4_K_M model. A saved-source diagnostic identified Qwen shortening quotations in real AAPL research. The corrected local contract selects evidence IDs and the server copies exact source windows; the update and full saved-source reanalysis are controlled-tested, pending execution on the user's PC. GPU performance and broader financial quality remain unverified. See [LOCAL_AI.md](LOCAL_AI.md), [the Windows evidence](LOCAL_WINDOWS_CHECK.json) and [the initial chat check](LOCAL_MODEL_CHAT_CHECK.json). Paid AI remains independently blocked by default (`PAID_AI_ENABLED=false`); local failures never switch providers.
 
 **Prioridad del usuario:** análisis de la acción que pida en cada ocasión para **3–6 meses**. DCF como contexto de valor presente; noticias, resultados, catalizadores y riesgo de precio como foco del producto. Véase [PRODUCT_SCOPE.md](PRODUCT_SCOPE.md). El objetivo no implica que el pronóstico o la tesis automática ya estén implementados.
 
@@ -47,14 +47,14 @@ Fecha y evidencia reproducible: [LIVE_VALIDATION.json](LIVE_VALIDATION.json), ge
 
 ## Pruebas
 
-- 190 controlled backend tests, including financial periods, horizons, scenarios, catalysts, quotation checks, local rejection diagnostics, saved-source replay, persistence/PDF and paid-AI blocking.
+- 198 controlled backend tests, including financial periods, horizons, scenarios, catalysts, citation references, Unicode-preserving quotes, rejection diagnostics, saved-source reanalysis/versioning, update integrity/rollback, persistence/PDF and paid-AI blocking.
 - 13 pruebas Chromium controladas y 3 pruebas Chromium de integración real opt-in. Los tests con fixtures no se confunden con validación externa.
 - Build Next.js, TypeScript y comprobación de arranque. Una advertencia de deprecación del cliente de pruebas Starlette/httpx permanece; las pruebas ejecutan y pasan.
 - Windows install/start validated through user-supplied output; Docker and GitHub Actions remain supplied but unvalidated on those platforms.
 
 ## Trabajo pendiente
 
-- Diagnose the first real-source Windows synthesis rejection, then evaluate extraction fidelity, semantic comparison, GPU speed and broader thesis quality. The synthetic schema/quotation check passed. A bounded quoted-claim synthesis is implemented; comprehensive qualitative conclusions and semantic retrieval remain pending.
+- Execute the citation-reference correction on Windows against real saved sources, then evaluate extraction fidelity, semantic support, GPU speed and broader thesis quality. The original synthetic check passed and non-verbatim real-source quotes were diagnosed. Comprehensive qualitative conclusions and semantic retrieval remain pending.
 - Búsqueda web general multifuente, filiales/productos/competidores, lectura autorizada de medios originales y deduplicación semántica.
 - Cuantificación automatizada de noticias y comprobación de doble contabilización; hoy el usuario justifica los cambios y quedan auditados.
 - Cobertura trimestral de emisores extranjeros cuando SEC no ofrece esos hechos; GPRK y ASML no permiten construir TTM con la cobertura XBRL recuperada. No se inventan trimestres.

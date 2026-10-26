@@ -56,9 +56,27 @@
     "completion_tokens": 615,
     "reasoning_tokens": 0,
     "output_limit": 1200,
-    "exact_rejection_category": "Not retained by the initial connector; local saved-batch diagnostic pending.",
+    "exact_rejection_category": "Not retained for this initial record; a subsequent saved-source replay identified non-verbatim quotes.",
     "used_for_synthesis": 0,
     "paid_api_calls": 0
+  },
+  "saved_source_diagnostic": {
+    "record_id": "8ed17895-53a1-4d12-a7f1-66db5536d09b",
+    "planned_evidence_batches": 6,
+    "batch_replayed": 1,
+    "same_payload_as_original_first_batch": true,
+    "request_sha256": "180e12430cfd0b5d46dc37cd411f19303fcb6643bc37e5a27de4c11562d2dc3e",
+    "finish_reason": "stop",
+    "completion_tokens": 741,
+    "reasoning_tokens": 0,
+    "code": "local_ai_unmatched_quote",
+    "mismatch_count_shown": 3,
+    "observed_problem": "Quotes joined separate passages with ... and changed punctuation/spacing; whitespace normalization alone did not match.",
+    "source_retrieval_calls": 0,
+    "paid_api_calls": 0,
+    "record_modified": false,
+    "replacement": "Local model selects batch-restricted evidence IDs; server copies exact source windows.",
+    "replacement_windows_execution_verified": false
   },
   "limitations": [
     "These are user-supplied observations, not direct access to the Windows PC.",
