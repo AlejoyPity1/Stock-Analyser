@@ -1,6 +1,6 @@
 # Prioridades del producto
 
-Requisito del usuario: analizar la acción que solicite en cada ocasión, con un horizonte principal de **3–6 meses**. No limitar la aplicación a AAPL, a una lista de ejemplos ni a una sola empresa. Local AI research is now being integrated with LM Studio/Qwen; Windows structured-output and financial-quality validation remain pending. See LOCAL_AI.md. No activar servicios IA de pago.
+Requisito del usuario: analizar la acción que solicite en cada ocasión, con un horizonte principal de **3–6 meses**. No limitar la aplicación a AAPL, a una lista de ejemplos ni a una sola empresa. The Windows local Qwen synthetic structured-output check passed; the first real-source synthesis was rejected and needs diagnosis. Financial-quality validation remains pending. See LOCAL_AI.md and LOCAL_WINDOWS_CHECK.json. No activar servicios IA de pago.
 
 ## Enfoque del análisis
 

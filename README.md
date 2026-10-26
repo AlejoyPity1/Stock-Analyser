@@ -4,7 +4,7 @@ Workspace personal de investigación financiera con datos reales de SEC y Finnhu
 
 **Objetivo principal:** analizar la acción que el usuario solicite para **3–6 meses**. Noticias, resultados, catalizadores y riesgo de precio; fundamentales y DCF como contexto. Los tickers de portada son ejemplos, no una lista cerrada. La cobertura actual depende de SEC/Finnhub US; no se declara acceso a todas las bolsas. [Prioridades del producto](docs/PRODUCT_SCOPE.md).
 
-**Status:** the main data workflow has live-provider validation. The local LM Studio connector is implemented; real structured inference and performance on Windows remain to be checked. [Local Qwen setup](docs/LOCAL_AI.md). [Cobertura, pruebas y pendientes](docs/STATUS.md) · [evidencia de proveedores](docs/LIVE_VALIDATION.json).
+**Status:** the main data workflow has live-provider validation. The user completed Windows installation, startup and the local Qwen synthetic structured-output check. The first real-source AI synthesis was rejected and is under diagnosis; GPU performance and financial quality remain unverified. [Local Qwen setup](docs/LOCAL_AI.md) · [Windows evidence](docs/LOCAL_WINDOWS_CHECK.json). [Cobertura, pruebas y pendientes](docs/STATUS.md) · [evidencia de proveedores](docs/LIVE_VALIDATION.json).
 
 **Interfaz:** portada con buscador, horizonte de inversión, empresas recientes, informes y seguimiento; navegación principal en español y adaptación a móvil. [Recorrido y capturas de la primera versión](docs/INTERFACE.md).
 
@@ -23,7 +23,7 @@ En cloud ya existen las variables de SEC/Finnhub/Alpha Vantage. No copies sus va
 
 ## Windows, para el siguiente paso local
 
-Se suministran scripts PowerShell, pendientes de ejecutar en el equipo Windows. Requieren Python 3.12 y Node.js 24 instalados:
+PowerShell install/start scripts were run successfully by the user on Windows. They require Python 3.12 and Node.js 24:
 
 ```powershell
 .\scripts\install.ps1
@@ -88,7 +88,7 @@ RUN_LIVE=1 npx playwright test live.spec.ts
 
 Chromium: `/usr/bin/chromium`, `CHROMIUM_PATH` o navegador instalado por Playwright. El test real guarda modelos e investigación sobre datos reales; los porcentajes son hipótesis de validación, no consenso ni recomendación. No activa IA. Datos, fechas y resultados concretos de cada prueba están en los registros.
 
-Verificados: 185 tests de backend, 13 flujos Chromium controlados y 3 flujos Chromium con proveedores reales. [Métricas y comparables](docs/ANALYTICS_VALIDATION.json), [horizontes](docs/HORIZON_VALIDATION.json) y [escenarios/calendario](docs/NEAR_TERM_VALIDATION.json) conservan evidencia. Los supuestos de prueba se identifican expresamente; estas ejecuciones no validan predicciones de cotización.
+Validation includes 190 backend tests, plus the previously completed 13 controlled Chromium flows and 3 Chromium flows with live providers. [Métricas y comparables](docs/ANALYTICS_VALIDATION.json), [horizontes](docs/HORIZON_VALIDATION.json) y [escenarios/calendario](docs/NEAR_TERM_VALIDATION.json) conservan evidencia. Los supuestos de prueba se identifican expresamente; estas ejecuciones no validan predicciones de cotización.
 
 ## Persistencia, arquitectura y seguridad
 

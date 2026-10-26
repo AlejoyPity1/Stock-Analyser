@@ -2,7 +2,7 @@
 
 Use **LM Studio on the same Windows PC as Stock Analyser**. Confirmed model ID reported by the user's `/v1/models` request: **`qwen/qwen3.5-9b`**. `text-embedding-nomic-embed-text-v1.5` is an embedding model, not the synthesis model.
 
-The user also completed a small chat grounding check: Qwen correctly restated synthetic revenue and missing guidance with S1/S2 citations. This establishes basic chat generation only. GPU acceleration, speed, structured-output generation through this connector, and broad financial accuracy still require checks on the Windows PC.
+The user completed the synthetic structured-output/quotation check on Windows, installed and built the app, and opened the running interface. Screenshots identify the actual downloaded file as **Qwen3.5-9B-Q4_K_M.gguf**, although Q6_K was originally recommended. The first real AAPL research collected sources but its synthesis was rejected (615 completion tokens, zero reasoning tokens); its exact validation failure still needs diagnosis. GPU acceleration, speed and financial quality remain unverified. See [the Windows evidence record](LOCAL_WINDOWS_CHECK.json).
 
 ## Windows setup
 
@@ -19,7 +19,7 @@ LOCAL_AI_MAX_OUTPUT_TOKENS=1200
 PAID_AI_ENABLED=false
 ```
 
-4. In LM Studio, load the downloaded Qwen3.5-9B Q6_K GGUF with an 8192-token context and GPU offload suitable for the RX 9060 XT. Start its server on port 1234. LAN serving and CORS can remain off. Per-request MCPs are not used. If authentication is enabled, put the local token in `LOCAL_AI_API_KEY`; never paste that token into chat or the browser.
+4. In LM Studio, load **one** downloaded Qwen3.5-9B GGUF with an 8192-token context and GPU offload suitable for the RX 9060 XT. The user's installed file is Q4_K_M; a quantization change is not required to run this connector. Start its server on port 1234. LAN serving and CORS can remain off. Per-request MCPs are not used. If authentication is enabled, put the local token in `LOCAL_AI_API_KEY`; never paste that token into chat or the browser.
 5. Start the application with `scripts/start.ps1`. In Settings, **Check local model** verifies the exact model ID is listed. This check deliberately does not claim successful inference or GPU acceleration.
 6. Run the structured-output check in PowerShell from the repository:
 
@@ -47,10 +47,13 @@ The cloud workspace cannot connect to the Windows PC's localhost. This version a
 
 ## Troubleshooting
 
+- **Thinking with LM Studio 0.4.26:** select the intended model, open **Inference > Custom Fields > Enable Thinking**, and turn it off for the initial 1200-token check. The separate **Reasoning** section contains a budget control. In **Model Server**, **Eject** unloads each model row. Loading repeatedly can create IDs such as `qwen/qwen3.5-9b:2`; unload duplicates and load one copy, then confirm thinking is off on the exact configured instance.
 - **Cannot reach LM Studio:** start its server on the same PC; verify port 1234.
 - **Model missing:** use the exact ID `qwen/qwen3.5-9b`, not the GGUF filename or the embedding ID.
 - **401:** set the optional local token when LM Studio requires authentication.
 - **Rejected/incomplete output:** the check now prints the rejection code, reason, usage and safe response diagnostics. `local_ai_output_truncated` means the model reached its output limit; inspect `reasoning_tokens` and `content_characters`. Configure thinking for the **server model** if reasoning consumes the output budget; a chat-only toggle may not change API behavior. `local_ai_invalid_json`, `local_ai_invalid_synthesis` and `local_ai_unmatched_quote` identify different failures and must not be treated as token-limit errors. Output is rejected rather than stripping thought text or fabricating a result. Increase the output allowance only with sufficient loaded context. The native REST chat API documents a `reasoning` option, but that is a different endpoint from this connector's OpenAI-compatible `/v1/chat/completions`; do not assume its parameters apply here.
 - **Slow/timeout:** check that LM Studio uses the RX 9060 XT, reduce context/output as appropriate and verify driver/runtime support. No tokens-per-second guarantee has been measured on the user's GPU.
 
-No real local inference or Windows execution is claimed from cloud-only tests. The user's chat test, controlled transport tests and a future real connector run are separate evidence.
+For a rejected saved research run, execute `scripts/diagnose_local_ai.py` on the Windows PC. It repeats **one** first-batch inference using the saved source text, original horizon and current local settings. It prints safe schema errors or explicitly unverified quotation mismatches and records whether the request hash matches the original first batch. It never retrieves new public sources, changes the research record, publishes a synthesis or relaxes literal quote validation. It is compatible with the initial application ZIP and can be installed as a single new script without restarting the app. Optional `--symbol` or `--record` selects a particular saved run; the default uses the latest research. The ignored `local-ai-diagnostic.json` contains the diagnostic. A fresh replay can differ from the original response and does not validate later batches.
+
+The user-reported Windows checks, controlled transport tests and real-source synthesis validation are distinct evidence. The synthetic check passed; real-source synthesis is still under diagnosis.

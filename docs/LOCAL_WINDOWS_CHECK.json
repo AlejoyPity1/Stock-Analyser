@@ -1,0 +1,70 @@
+{
+  "recorded_on": "2026-10-26",
+  "evidence_type": "user_supplied_windows_terminal_output_and_screenshots",
+  "cloud_execution_of_user_pc": false,
+  "versions_reported": {
+    "python": "3.12.10",
+    "node": "24.22.1",
+    "lm_studio": "0.4.26"
+  },
+  "model_id": "qwen/qwen3.5-9b",
+  "model_file_seen_in_lm_studio": "Qwen3.5-9B-Q4_K_M.gguf",
+  "quantization_seen_in_lm_studio": "Q4_K_M",
+  "context_length_seen_in_load_dialog": 8192,
+  "gpu_offload_setting_seen": 32,
+  "gpu_acceleration_verified": false,
+  "tokens_per_second": null,
+  "windows_install_script": {
+    "dependencies_installed": true,
+    "next_build_completed": true,
+    "typescript_completed": true
+  },
+  "windows_start_script": {
+    "next_ready": true,
+    "fastapi_startup_completed": true,
+    "interface_opened_in_user_browser": true
+  },
+  "synthetic_connector_check": {
+    "script": "scripts/verify_local_ai.py",
+    "passed_reported": true,
+    "schema_and_literal_quote_check": true,
+    "paid_api_calls": 0,
+    "initial_failure": "All 1200 completion tokens were reasoning tokens.",
+    "user_actions_before_pass": "Disable Enable Thinking under Inference > Custom Fields; eject duplicate loaded copies and load one model with the exact configured ID.",
+    "financial_quality_evaluated": false
+  },
+  "windows_data_checks": {
+    "provider_configuration_badges": ["sec", "finnhub", "alphavantage", "local"],
+    "aapl_company_financials_displayed": true,
+    "aapl_quote_displayed": true,
+    "aapl_sec_and_finnhub_sources_collected": true,
+    "alphavantage_request_verified_on_windows": false
+  },
+  "first_real_research": {
+    "symbol": "AAPL",
+    "mode": "quick",
+    "horizon": "3-6m",
+    "collection_completed": true,
+    "sources_found": 295,
+    "sources_selected": 10,
+    "full_documents_read": 2,
+    "abstracts_only": 5,
+    "ai_status": "rejected",
+    "planned_evidence_batches": 2,
+    "model_calls_before_rejection": 1,
+    "prompt_tokens": 1516,
+    "completion_tokens": 615,
+    "reasoning_tokens": 0,
+    "output_limit": 1200,
+    "exact_rejection_category": "Not retained by the initial connector; local saved-batch diagnostic pending.",
+    "used_for_synthesis": 0,
+    "paid_api_calls": 0
+  },
+  "limitations": [
+    "These are user-supplied observations, not direct access to the Windows PC.",
+    "A passing synthetic check does not establish successful real-source research or financial quality.",
+    "GPU settings do not prove GPU execution or speed.",
+    "Provider configuration does not certify entitlement, quota or coverage.",
+    "No credentials or contact values are recorded."
+  ]
+}

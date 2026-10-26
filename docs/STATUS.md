@@ -1,6 +1,6 @@
 # Estado de implementación
 
-Local AI integration is now underway. The LM Studio connector uses `qwen/qwen3.5-9b`, structured English claims, bounded source excerpts and literal quote checks. The user completed a small chat grounding check; real structured inference through this connector, GPU performance and broader financial quality remain pending on Windows. See [LOCAL_AI.md](LOCAL_AI.md) and [the user-reported chat check](LOCAL_MODEL_CHAT_CHECK.json). Paid AI remains independently blocked by default (`PAID_AI_ENABLED=false`); local failures never switch providers.
+The LM Studio connector uses `qwen/qwen3.5-9b`, structured English claims, bounded source excerpts and literal quote checks. The user completed Windows installation/build/startup and the synthetic structured-output check with the installed Q4_K_M model. Real AAPL data/source collection works on that PC, but its first AI synthesis was rejected; diagnosis is pending. GPU performance and broader financial quality remain unverified. See [LOCAL_AI.md](LOCAL_AI.md), [the Windows evidence](LOCAL_WINDOWS_CHECK.json) and [the initial chat check](LOCAL_MODEL_CHAT_CHECK.json). Paid AI remains independently blocked by default (`PAID_AI_ENABLED=false`); local failures never switch providers.
 
 **Prioridad del usuario:** análisis de la acción que pida en cada ocasión para **3–6 meses**. DCF como contexto de valor presente; noticias, resultados, catalizadores y riesgo de precio como foco del producto. Véase [PRODUCT_SCOPE.md](PRODUCT_SCOPE.md). El objetivo no implica que el pronóstico o la tesis automática ya estén implementados.
 
@@ -43,18 +43,18 @@ Fecha y evidencia reproducible: [LIVE_VALIDATION.json](LIVE_VALIDATION.json), ge
 - Watchlist y notas persistentes.
 - Expediente estructurado de 18 apartados con estados disponible/parcial/pendiente. Export JSON y **PDF autónomo del servidor**, además de impresión del navegador. Un apartado presente no implica que su análisis esté completado.
 - SQLite, esquema inicial versionado, caché, backoff, límites por host/solicitudes, validación, claves en backend, proxy con control de origen y token interno.
-- Locks reproducibles, scripts Linux, scripts PowerShell propuestos para Windows y Docker/Compose. Estos dos últimos no se han ejecutado en Windows/contenedores.
+- Reproducible locks, Linux scripts, Windows PowerShell install/start scripts and Docker/Compose. The user completed Windows installation, build and startup; containers remain unvalidated.
 
 ## Pruebas
 
-- 185 pruebas controladas de backend, incluidas finanzas/períodos, horizontes, escenarios de precio/retornos, catalizadores/versiones, citas, calendario filtrado, persistencia/PDF y bloqueo de IA pagada.
+- 190 controlled backend tests, including financial periods, horizons, scenarios, catalysts, quotation checks, local rejection diagnostics, saved-source replay, persistence/PDF and paid-AI blocking.
 - 13 pruebas Chromium controladas y 3 pruebas Chromium de integración real opt-in. Los tests con fixtures no se confunden con validación externa.
 - Build Next.js, TypeScript y comprobación de arranque. Una advertencia de deprecación del cliente de pruebas Starlette/httpx permanece; las pruebas ejecutan y pasan.
-- Docker, PowerShell en Windows y GitHub Actions: suministrados, **no validados en esas plataformas**.
+- Windows install/start validated through user-supplied output; Docker and GitHub Actions remain supplied but unvalidated on those platforms.
 
 ## Trabajo pendiente
 
-- Run and evaluate the new local connector on Windows: structured inference, GPU speed, extraction fidelity, semantic comparison and broader thesis quality. A bounded quoted-claim synthesis is implemented; comprehensive qualitative conclusions and semantic retrieval remain pending.
+- Diagnose the first real-source Windows synthesis rejection, then evaluate extraction fidelity, semantic comparison, GPU speed and broader thesis quality. The synthetic schema/quotation check passed. A bounded quoted-claim synthesis is implemented; comprehensive qualitative conclusions and semantic retrieval remain pending.
 - Búsqueda web general multifuente, filiales/productos/competidores, lectura autorizada de medios originales y deduplicación semántica.
 - Cuantificación automatizada de noticias y comprobación de doble contabilización; hoy el usuario justifica los cambios y quedan auditados.
 - Cobertura trimestral de emisores extranjeros cuando SEC no ofrece esos hechos; GPRK y ASML no permiten construir TTM con la cobertura XBRL recuperada. No se inventan trimestres.

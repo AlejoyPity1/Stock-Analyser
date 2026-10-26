@@ -35,7 +35,7 @@ Límites operativos: un proceso backend, caché local por entorno, base personal
 - El endpoint `/research` es asíncrono: crea tareas en el loop de la aplicación, no en un thread de handlers síncronos.
 - La inicialización de esquema y la recuperación de tareas se separaron: ejecutar verificaciones de proveedores no interrumpe trabajos de otro proceso activo.
 - `PAID_AI_ENABLED=false` bloquea cualquier llamada pagada aunque exista una clave. The local LM Studio connector is separately selected with AI_PROVIDER=local and never falls back to a paid provider. No se considera habilitado el modelo por tener un valor en RESEARCH_MODEL.
-- Supervisor probado en Linux y con puertos configurables para pruebas aisladas. Rama Windows y wrappers PowerShell suministrados, pendientes de ejecutar en Windows.
+- Supervisor tested in Linux with configurable ports for isolated checks. The user also ran the PowerShell install/start wrappers on Windows and confirmed FastAPI/Next startup and browser access; see LOCAL_WINDOWS_CHECK.json.
 
 ## Rentabilidad, calidad de datos y comparables
 
