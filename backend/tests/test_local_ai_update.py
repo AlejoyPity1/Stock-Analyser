@@ -1,6 +1,7 @@
 """The Windows handoff must preserve credentials/data and restore code on failure."""
 import importlib.util
 import subprocess
+from types import SimpleNamespace
 from pathlib import Path
 
 import pytest
@@ -55,5 +56,43 @@ def test_update_rolls_back_replaced_code_if_later_file_cannot_be_installed(tmp_p
     with pytest.raises(OSError, match='controlled installation failure'):
         updater.install(root, source)
     assert all((root / name).read_bytes() == b'# original code fixture\n' for name in updater.FILES)
+    assert (root / '.env').read_bytes() == b'LOCAL_CONFIG_SENTINEL'
+    assert (root / 'stock.db').read_bytes() == b'LOCAL_DATABASE_SENTINEL'
+
+
+def test_failed_frontend_build_restores_old_build_and_code(tmp_path, monkeypatch):
+    root = installation(tmp_path)
+    (root / 'frontend/.next').mkdir()
+    (root / 'frontend/.next/BUILD_ID').write_text('previous-build')
+    backup = updater.install(root, source)
+    monkeypatch.setattr(updater.shutil, 'which', lambda command: 'controlled-npm')
+    def build(*args, **kwargs):
+        (root / 'frontend/.next').mkdir()
+        (root / 'frontend/.next/partial').write_text('failed-build')
+        return SimpleNamespace(returncode=1)
+    monkeypatch.setattr(updater.subprocess, 'run', build)
+    with pytest.raises(RuntimeError, match='build failed'):
+        updater.build_frontend(root, backup)
+    updater.restore_code(root, backup)
+    assert (root / 'frontend/.next/BUILD_ID').read_text() == 'previous-build'
+    assert all((root / name).read_bytes() == b'# original code fixture\n' for name in updater.FILES)
+    assert (root / '.env').read_bytes() == b'LOCAL_CONFIG_SENTINEL'
+    assert (root / 'stock.db').read_bytes() == b'LOCAL_DATABASE_SENTINEL'
+
+
+def test_successful_frontend_build_keeps_previous_build_in_backup(tmp_path, monkeypatch):
+    root = installation(tmp_path)
+    (root / 'frontend/.next').mkdir()
+    (root / 'frontend/.next/BUILD_ID').write_text('previous-build')
+    backup = updater.install(root, source)
+    monkeypatch.setattr(updater.shutil, 'which', lambda command: 'controlled-npm')
+    def build(*args, **kwargs):
+        (root / 'frontend/.next').mkdir()
+        (root / 'frontend/.next/BUILD_ID').write_text('new-build')
+        return SimpleNamespace(returncode=0)
+    monkeypatch.setattr(updater.subprocess, 'run', build)
+    updater.build_frontend(root, backup)
+    assert (root / 'frontend/.next/BUILD_ID').read_text() == 'new-build'
+    assert (root / backup / 'frontend-build/BUILD_ID').read_text() == 'previous-build'
     assert (root / '.env').read_bytes() == b'LOCAL_CONFIG_SENTINEL'
     assert (root / 'stock.db').read_bytes() == b'LOCAL_DATABASE_SENTINEL'

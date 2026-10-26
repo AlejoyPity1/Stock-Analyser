@@ -1,6 +1,6 @@
 # Estado de implementación
 
-The LM Studio connector uses `qwen/qwen3.5-9b`, structured English claims and bounded source excerpts. The user completed Windows installation/build/startup, the original synthetic check and the corrected real-source run with the installed Q4_K_M model. The evidence-ID correction completed **6/6 batches**, generating **16 claims from 14 sources** with zero paid calls or new source retrieval; it created a new record and preserved the original. The app was restarted after the update. Semantic support, GPU performance and broader financial quality remain unverified. See [LOCAL_AI.md](LOCAL_AI.md), [the Windows evidence](LOCAL_WINDOWS_CHECK.json) and [the initial chat check](LOCAL_MODEL_CHAT_CHECK.json). Paid AI remains independently blocked by default (`PAID_AI_ENABLED=false`); local failures never switch providers.
+The Windows local Qwen workflow and exact source citations work. Review of the first exported 16-claim synthesis found quarter/unit confusion and lost source context. Structured financial facts, numerical-claim withholding, complete-sentence windows and an audited issuer-link heuristic are now implemented; **214 backend tests, 14 browser tests and the production build pass**. The new quality update still requires a Windows Qwen run and semantic review. GPU benchmarking, broader financial quality and predictions remain unvalidated. See [RESEARCH_QUALITY.md](RESEARCH_QUALITY.md), [LOCAL_AI.md](LOCAL_AI.md) and [the Windows evidence](LOCAL_WINDOWS_CHECK.json). Paid AI remains independently blocked by default; local failures never switch providers.
 
 **Prioridad del usuario:** análisis de la acción que pida en cada ocasión para **3–6 meses**. DCF como contexto de valor presente; noticias, resultados, catalizadores y riesgo de precio como foco del producto. Véase [PRODUCT_SCOPE.md](PRODUCT_SCOPE.md). El objetivo no implica que el pronóstico o la tesis automática ya estén implementados.
 
@@ -47,14 +47,14 @@ Fecha y evidencia reproducible: [LIVE_VALIDATION.json](LIVE_VALIDATION.json), ge
 
 ## Pruebas
 
-- 198 controlled backend tests, including financial periods, horizons, scenarios, catalysts, citation references, Unicode-preserving quotes, rejection diagnostics, saved-source reanalysis/versioning, update integrity/rollback, persistence/PDF and paid-AI blocking.
-- 13 pruebas Chromium controladas y 3 pruebas Chromium de integración real opt-in. Los tests con fixtures no se confunden con validación externa.
+- 214 controlled backend tests, including financial periods, grounded fact tables, withholding of numerical AI statements, source/context checks, horizons, scenarios, citations, reanalysis, update/build rollback, persistence/PDF and paid-AI blocking.
+- 14 controlled Chromium tests pass, including the grounded report display; 3 live-provider browser flows were completed previously and were not rerun for this quality update. Controlled fixtures are distinct from external validation.
 - Build Next.js, TypeScript y comprobación de arranque. Una advertencia de deprecación del cliente de pruebas Starlette/httpx permanece; las pruebas ejecutan y pasan.
 - Windows install/start validated through user-supplied output; Docker and GitHub Actions remain supplied but unvalidated on those platforms.
 
 ## Trabajo pendiente
 
-- Review semantic support of the 16 generated real-source claims, then evaluate extraction fidelity, GPU speed and broader thesis quality. The original synthetic check and all 6 corrected real-source batches passed on Windows. Comprehensive qualitative conclusions and semantic retrieval remain pending.
+- The 16-claim export review found quarter/unit errors, missing negation context and source-relevance problems. Structured facts, numerical-claim withholding, complete-sentence windows and audited issuer linking are implemented and controlled-tested; the new quality update still needs a Windows Qwen run and review. See [RESEARCH_QUALITY.md](RESEARCH_QUALITY.md). GPU benchmarking, comprehensive conclusions and semantic retrieval remain pending.
 - Búsqueda web general multifuente, filiales/productos/competidores, lectura autorizada de medios originales y deduplicación semántica.
 - Cuantificación automatizada de noticias y comprobación de doble contabilización; hoy el usuario justifica los cambios y quedan auditados.
 - Cobertura trimestral de emisores extranjeros cuando SEC no ofrece esos hechos; GPRK y ASML no permiten construir TTM con la cobertura XBRL recuperada. No se inventan trimestres.

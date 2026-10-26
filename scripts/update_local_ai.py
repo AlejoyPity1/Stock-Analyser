@@ -1,8 +1,11 @@
 """Install the citation fix, then analyze saved sources using local Qwen."""
 import argparse
 import hashlib
+import json
 import os
 from pathlib import Path
+import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -10,12 +13,17 @@ from urllib.request import Request, urlopen
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
-REVISION = 'd15120c901206f096148528dcbaac7acba38dfa9'
+REVISION = 'cbfbce79adf695599d7691d0b01330b36ef56d1f'
 BASE_URL = f'https://raw.githubusercontent.com/AlejoyPity1/Stock-Analyser/{REVISION}/'
 FILES = {
-    'backend/app/local_ai.py': '7150895ac8b74725479ca57f3f769b2c2009ada289cb4ad533619858077c6248',
-    'scripts/diagnose_local_ai.py': '33aaea756667f439da9f07c927aa102e149b11a66b236218f1f226abc4adbd0f',
-    'scripts/reanalyze_local_ai.py': '7deed813ea6f5965edef02f1f69c0c5ac3bbd88231110c77d00faafbea1f0d06',
+    'backend/app/local_ai.py': '9a915d31be2148dcccc623961e273726718af107fc25fc4585a4bf9a3977c727',
+    'backend/app/research_quality.py': '5752cda21ea7288b7c9cbbf2ba017f34b72d5e4f7a4475e2f6de907becf651b0',
+    'backend/app/research.py': '85b4226ed3c205a6bfcb3f530ba723e794fd2227d2efc993f0ff0608d5c5c3ef',
+    'backend/app/reporting.py': 'f20a39386309f12bc099babee449011f6a6c1bb8c85d3b9ff2720ce7a8f19fe5',
+    'scripts/diagnose_local_ai.py': '0b997261707bcdd802b43e915988f60ea56c7f3962e0f752626546b06bb07639',
+    'scripts/reanalyze_local_ai.py': '0de80d822f63b6fd896058414f0b859831618d59d173bb5af2eb0a64c53c9355',
+    'frontend/app/page.tsx': '6d8bfcbb7b6a9f5994f7608498ceee91af324e0b2c0cc872989af3cd266926c0',
+    'frontend/components/ResearchFinancialFacts.tsx': '517e9328701b93126b3b92acf78b2dbbcad3c1668ecf6687f07c232e442e5083',
 }
 
 
@@ -43,9 +51,10 @@ def install(root=ROOT, fetch=None):
         content = fetch(BASE_URL + relative)
         if hashlib.sha256(content).hexdigest() != expected:
             raise ValueError('Downloaded source hash mismatch: ' + relative)
-        compile(content, relative, 'exec')
+        if relative.endswith('.py'):
+            compile(content, relative, 'exec')
         verified[relative] = content
-    # Only these three code files are read/replaced. .env, stock.db, dependencies
+    # Only the pinned code files are read/replaced. .env, stock.db, dependencies
     # and model files are never opened or rewritten by the updater.
     backup = root / '.local-ai-backups' / uuid4().hex[:12]
     backup.mkdir(parents=True)
@@ -57,6 +66,7 @@ def install(root=ROOT, fetch=None):
             saved = backup / relative
             saved.parent.mkdir(parents=True, exist_ok=True)
             saved.write_bytes(target.read_bytes())
+    (backup / 'manifest.json').write_text(json.dumps(originals), encoding='utf-8')
     replaced = []
     with tempfile.TemporaryDirectory(prefix='.local-ai-update-', dir=root) as directory:
         try:
@@ -76,18 +86,79 @@ def install(root=ROOT, fetch=None):
     return backup.relative_to(root).as_posix()
 
 
+def restore_code(root, backup):
+    root = Path(root); backup = root / backup
+    originals = json.loads((backup / 'manifest.json').read_text())
+    for relative, existed in originals.items():
+        target = root / relative
+        if existed:
+            staged = target.with_name(target.name + '.restore-' + uuid4().hex[:8])
+            staged.write_bytes((backup / relative).read_bytes())
+            os.replace(staged, target)
+        else:
+            target.unlink(missing_ok=True)
+
+
+def app_running():
+    for port in (int(os.environ.get('WEB_PORT', '3000')), int(os.environ.get('API_PORT', '8000'))):
+        with socket.socket() as connection:
+            connection.settimeout(.25)
+            if connection.connect_ex(('127.0.0.1', port)) == 0:
+                return True
+    return False
+
+
+def build_frontend(root, backup):
+    root = Path(root)
+    current = root / 'frontend/.next'
+    saved = root / backup / 'frontend-build'
+    if current.is_symlink():
+        raise ValueError('The frontend build directory must be local to the project.')
+    npm = shutil.which('npm.cmd' if os.name == 'nt' else 'npm')
+    if not npm:
+        raise RuntimeError('Node.js/npm is not available in this PowerShell window.')
+    if current.exists():
+        os.replace(current, saved)
+    try:
+        result = subprocess.run([npm, 'run', 'build'], cwd=root / 'frontend')
+        if result.returncode:
+            raise RuntimeError('Frontend build failed.')
+    except Exception:
+        if current.exists():
+            shutil.rmtree(current)
+        if saved.exists():
+            os.replace(saved, current)
+        raise
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--install-only', action='store_true')
+    parser.add_argument('--no-start', action='store_true', help='Do not launch the app after rebuilding/reanalysis.')
     args = parser.parse_args()
+    if not args.install_only and app_running():
+        print('Stop Stock Analyser first: press Ctrl+C in its server PowerShell window and wait for the prompt. Leave LM Studio running.', file=sys.stderr)
+        raise SystemExit(1)
     try:
         backup = install()
     except Exception as error:
         print('Update failed: ' + str(error), file=sys.stderr)
         raise SystemExit(1)
-    print('Citation update installed. Code backup: ' + backup, flush=True)
-    print('The running app loads the new backend code after its next restart.', flush=True)
+    print('Research quality update installed. Code backup: ' + backup, flush=True)
     if not args.install_only:
-        print('Analyzing saved sources in a separate process now; the app can stay open.', flush=True)
+        try:
+            print('Building the updated financial report interface.', flush=True)
+            build_frontend(ROOT, backup)
+        except Exception as error:
+            restore_code(ROOT, backup)
+            print('Build failed; previous code and build restored: ' + str(error), file=sys.stderr)
+            raise SystemExit(1)
+        print('Analyzing saved sources with grounded financial context.', flush=True)
         result = subprocess.run([sys.executable, str(ROOT / 'scripts/reanalyze_local_ai.py')], cwd=ROOT)
-        raise SystemExit(result.returncode)
+        if args.no_start:
+            raise SystemExit(result.returncode)
+        if result.returncode:
+            print('Reanalysis needs review; inspect local-ai-reanalysis.json. Starting the app with the new guards.', flush=True)
+        else:
+            print('Saved-source reanalysis completed. Starting Stock Analyser.', flush=True)
+        raise SystemExit(subprocess.run([sys.executable, str(ROOT / 'scripts/start.py')], cwd=ROOT).returncode)

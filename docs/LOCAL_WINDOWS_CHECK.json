@@ -93,8 +93,20 @@
     "original_record_modified": false,
     "new_record_created": true,
     "app_restart_after_update_reported_ready": true,
-    "claim_semantics_reviewed": false,
+    "claim_semantics_reviewed": true,
+    "manual_review_outcome": "Requires corrections: quarter/unit confusion, missing source context, weak relevance and unsupported implications.",
     "financial_quality_evaluated": false
+  },
+  "quality_update": {
+    "structured_period_and_unit_facts": true,
+    "model_numerical_financial_statement_withholding": true,
+    "complete_sentence_windows": true,
+    "audited_issuer_link_heuristic": true,
+    "offline_case_excluded_sources": 11,
+    "controlled_backend_tests": 214,
+    "controlled_browser_tests": 14,
+    "windows_qwen_execution_verified": false,
+    "semantic_quality_certified": false
   },
   "limitations": [
     "These are user-supplied observations, not direct access to the Windows PC.",
