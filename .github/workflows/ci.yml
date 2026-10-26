@@ -1,0 +1,30 @@
+name: Validate
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: ./scripts/install.sh
+      - run: ./scripts/test.sh
+      - run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - run: ./scripts/start.sh > /tmp/stock-ci.log 2>&1 &
+      - name: Wait for services
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://127.0.0.1:3000/api/health; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/stock-ci.log
+          exit 1
+      - run: npx playwright test
+        working-directory: frontend

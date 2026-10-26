@@ -1,0 +1,144 @@
+{
+  "verified_at": "2026-10-25T21:36:43.815690+00:00",
+  "ai_calls": 0,
+  "results": [
+    {
+      "symbol": "AAPL",
+      "sec": {
+        "status": "retrieved",
+        "name": "Apple Inc.",
+        "taxonomy": "us-gaap",
+        "currency": "USD",
+        "annual_periods": 10,
+        "latest_period": "2025-09-27",
+        "quarters": 40,
+        "ttm_end": "2026-06-27",
+        "filings": 50,
+        "retrieved_at": "2026-10-25T21:36:33.884278+00:00"
+      },
+      "annual_revenue_crosscheck": {
+        "status": "matched_inline_fact",
+        "metric": "revenue",
+        "value": 416161000000,
+        "currency": "USD",
+        "period_end": "2025-09-27",
+        "tag": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+        "accession": "0000320193-25-000079",
+        "source": "https://www.sec.gov/Archives/edgar/data/320193/000032019325000079/aapl-20250927.htm",
+        "contexts": [
+          "c-1"
+        ]
+      },
+      "document": {
+        "status": "read",
+        "full_text": true,
+        "source": "https://www.sec.gov/Archives/edgar/data/320193/000032019326000020/aapl-20260627.htm"
+      },
+      "quote": {
+        "status": "retrieved",
+        "timestamp": "2026-10-23T20:00:00+00:00",
+        "currency": "USD",
+        "exchange": "XNAS",
+        "source": "https://finnhub.io/docs/api/quote",
+        "compatible_with_reporting_currency": true
+      },
+      "news": {
+        "status": "retrieved",
+        "count": 246,
+        "full_articles_claimed": false
+      }
+    },
+    {
+      "symbol": "GPRK",
+      "sec": {
+        "status": "retrieved",
+        "name": "GeoPark Ltd",
+        "taxonomy": "ifrs-full",
+        "currency": "USD",
+        "annual_periods": 10,
+        "latest_period": "2025-12-31",
+        "quarters": 0,
+        "ttm_end": null,
+        "filings": 50,
+        "retrieved_at": "2026-10-25T21:36:35.535473+00:00"
+      },
+      "annual_revenue_crosscheck": {
+        "status": "matched_inline_fact",
+        "metric": "revenue",
+        "value": 492518000,
+        "currency": "USD",
+        "period_end": "2025-12-31",
+        "tag": "ifrs-full:Revenue",
+        "accession": "0001104659-26-037819",
+        "source": "https://www.sec.gov/Archives/edgar/data/1464591/000110465926037819/gprk-20251231x20f.htm",
+        "contexts": [
+          "Duration_1_1_2025_To_12_31_2025_sfV0hVioK0yRprM4_s1Z-Q"
+        ]
+      },
+      "document": {
+        "status": "read",
+        "full_text": true,
+        "source": "https://www.sec.gov/Archives/edgar/data/1464591/000095010326016049/dp255448_6k.htm"
+      },
+      "quote": {
+        "status": "retrieved",
+        "timestamp": "2026-10-23T20:00:00+00:00",
+        "currency": "USD",
+        "exchange": "XNYS",
+        "source": "https://finnhub.io/docs/api/quote",
+        "compatible_with_reporting_currency": true
+      },
+      "news": {
+        "status": "retrieved",
+        "count": 16,
+        "full_articles_claimed": false
+      }
+    },
+    {
+      "symbol": "ASML",
+      "sec": {
+        "status": "retrieved",
+        "name": "ASML HOLDING NV",
+        "taxonomy": "us-gaap",
+        "currency": "EUR",
+        "annual_periods": 10,
+        "latest_period": "2025-12-31",
+        "quarters": 0,
+        "ttm_end": null,
+        "filings": 50,
+        "retrieved_at": "2026-10-25T21:36:38.314459+00:00"
+      },
+      "annual_revenue_crosscheck": {
+        "status": "matched_inline_fact",
+        "metric": "revenue",
+        "value": 32667300000,
+        "currency": "EUR",
+        "period_end": "2025-12-31",
+        "tag": "us-gaap:RevenueFromContractWithCustomerExcludingAssessedTax",
+        "accession": "0001628280-26-011378",
+        "source": "https://www.sec.gov/Archives/edgar/data/937966/000162828026011378/asml-20251231.htm",
+        "contexts": [
+          "c-1"
+        ]
+      },
+      "document": {
+        "status": "read",
+        "full_text": true,
+        "source": "https://www.sec.gov/Archives/edgar/data/937966/000162828026065813/form6-kquarterlyfilings.htm"
+      },
+      "quote": {
+        "status": "retrieved",
+        "timestamp": "2026-10-23T20:00:00+00:00",
+        "currency": "USD",
+        "exchange": "XNAS",
+        "source": "https://finnhub.io/docs/api/quote",
+        "compatible_with_reporting_currency": false
+      },
+      "news": {
+        "status": "retrieved",
+        "count": 245,
+        "full_articles_claimed": false
+      }
+    }
+  ]
+}

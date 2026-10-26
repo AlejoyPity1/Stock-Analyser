@@ -1,0 +1,178 @@
+{
+  "verified_at": "2026-10-26T09:54:12.079310+00:00",
+  "ai_calls": 0,
+  "interpretation": "Real quote/calendar and application workflow validation. EPS, multiples and dividends are explicit automated-test assumptions, not company forecasts or investment recommendations. Calendar dates are provider estimates, not official confirmations.",
+  "price_scenario": {
+    "model_version": "price-horizon-1.0",
+    "record_type": "price_scenario",
+    "symbol": "NVDA",
+    "currency": "USD",
+    "created_at": "2026-10-26T09:52:53.973034+00:00",
+    "inputs": {
+      "symbol": "NVDA",
+      "currency": "USD",
+      "horizon": "3m",
+      "three_months": {
+        "bear": {
+          "forward_eps": 1.0,
+          "pe": 10.0,
+          "dividends_per_share": 0.0,
+          "rationale": "VALIDACIÓN AUTOMATIZADA: EPS y P/E hipotéticos para probar el motor; no son previsiones ni recomendación.",
+          "invalidation": "VALIDACIÓN: la hipótesis de beneficio deja de estar respaldada por evidencia."
+        },
+        "base": {
+          "forward_eps": 1.0,
+          "pe": 20.0,
+          "dividends_per_share": 0.0,
+          "rationale": "VALIDACIÓN AUTOMATIZADA: EPS y P/E hipotéticos para probar el motor; no son previsiones ni recomendación.",
+          "invalidation": "VALIDACIÓN: la hipótesis de beneficio deja de estar respaldada por evidencia."
+        },
+        "bull": {
+          "forward_eps": 1.0,
+          "pe": 30.0,
+          "dividends_per_share": 0.0,
+          "rationale": "VALIDACIÓN AUTOMATIZADA: EPS y P/E hipotéticos para probar el motor; no son previsiones ni recomendación.",
+          "invalidation": "VALIDACIÓN: la hipótesis de beneficio deja de estar respaldada por evidencia."
+        }
+      },
+      "six_months": null,
+      "catalyst_ids": [],
+      "research_id": "94ca0d8d-f1b9-42e2-9f8c-8e303f670bcd"
+    },
+    "investment_horizon": {
+      "code": "3m",
+      "label": "3 meses",
+      "as_of": "2026-10-26",
+      "min_months": 3,
+      "max_months": 3,
+      "window_start_date": "2027-01-26",
+      "window_end_date": "2027-01-26",
+      "focus": [
+        "Resultados, guidance y catalizadores con fecha confirmada dentro del horizonte.",
+        "Noticias recientes y riesgos que puedan cambiar la tesis en este período.",
+        "Momentum, volatilidad y comparación con benchmark cuando exista cobertura.",
+        "Fundamentales y valoración como contexto; escenarios e invalidación de la tesis pendientes de evidencia."
+      ],
+      "interpretation": "Ventana de análisis elegida, no fecha de compra o venta ni promesa de rentabilidad. El DCF estima valor presente y no predice la cotización a este horizonte."
+    },
+    "reference_quote": {
+      "price": 210.96,
+      "currency": "USD",
+      "timestamp": "2026-10-23T20:00:00+00:00",
+      "retrieved_at": "2026-10-26T09:52:53.973024+00:00",
+      "type": "latest_available_not_guaranteed_realtime",
+      "source": "https://finnhub.io/docs/api/quote",
+      "provider": "Finnhub",
+      "stale": true,
+      "change_percent": -0.589,
+      "exchange": "XNAS",
+      "instrument": {
+        "symbol": "NVDA",
+        "figi": "BBG000BBJQV0",
+        "type": "Common Stock"
+      },
+      "currency_source": "https://finnhub.io/docs/api/stock-symbols"
+    },
+    "catalysts": [],
+    "horizons": {
+      "3": {
+        "target_date": "2027-01-26",
+        "cases": {
+          "bear": {
+            "inputs": {
+              "forward_eps": 1.0,
+              "pe": 10.0,
+              "dividends_per_share": 0.0,
+              "rationale": "VALIDACIÓN AUTOMATIZADA: EPS y P/E hipotéticos para probar el motor; no son previsiones ni recomendación.",
+              "invalidation": "VALIDACIÓN: la hipótesis de beneficio deja de estar respaldada por evidencia."
+            },
+            "price": 10.0,
+            "price_return": -0.9525976488433826,
+            "gross_return_with_dividends": -0.9525976488433826,
+            "breakeven_pe": 210.96
+          },
+          "base": {
+            "inputs": {
+              "forward_eps": 1.0,
+              "pe": 20.0,
+              "dividends_per_share": 0.0,
+              "rationale": "VALIDACIÓN AUTOMATIZADA: EPS y P/E hipotéticos para probar el motor; no son previsiones ni recomendación.",
+              "invalidation": "VALIDACIÓN: la hipótesis de beneficio deja de estar respaldada por evidencia."
+            },
+            "price": 20.0,
+            "price_return": -0.9051952976867652,
+            "gross_return_with_dividends": -0.9051952976867652,
+            "breakeven_pe": 210.96
+          },
+          "bull": {
+            "inputs": {
+              "forward_eps": 1.0,
+              "pe": 30.0,
+              "dividends_per_share": 0.0,
+              "rationale": "VALIDACIÓN AUTOMATIZADA: EPS y P/E hipotéticos para probar el motor; no son previsiones ni recomendación.",
+              "invalidation": "VALIDACIÓN: la hipótesis de beneficio deja de estar respaldada por evidencia."
+            },
+            "price": 30.0,
+            "price_return": -0.8577929465301479,
+            "gross_return_with_dividends": -0.8577929465301479,
+            "breakeven_pe": 210.96
+          }
+        },
+        "conditional_reward_risk": null,
+        "reward_risk_interpretation": "Retorno alcista / pérdida absoluta bajista, solo cuando existe ganancia y pérdida. No es una expectativa estadística."
+      }
+    },
+    "formula": "Precio condicional = EPS forward 12 meses en la fecha objetivo × P/E supuesto; retorno bruto = (precio condicional + dividendos del horizonte) / precio inicial − 1.",
+    "limitations": [
+      "Supuestos introducidos por el usuario, no consenso, previsión IA ni recomendación.",
+      "El EPS corresponde a los 12 meses siguientes a la fecha objetivo; no es el beneficio de 3 o 6 meses ni se obtiene prorrateando el anual.",
+      "EPS y dividendos deben corresponder a la misma acción/ADR y divisa que la cotización, sin conversión automática.",
+      "Dividendos hipotéticos en efectivo, sin reinversión, impuestos, comisiones ni ajuste automático por splits.",
+      "P/E con EPS positivo; empresas en pérdidas requieren otro método, todavía no implementado.",
+      "Sin probabilidades ni retorno esperado ponderado. Los catalizadores son referencias y no se suman automáticamente al EPS."
+    ],
+    "id": "7624fc3e-cafe-4555-ac0e-7854fb264ae5",
+    "research_id": "94ca0d8d-f1b9-42e2-9f8c-8e303f670bcd"
+  },
+  "earnings_calendar": {
+    "symbol": "NVDA",
+    "from": "2026-10-26",
+    "to": "2027-04-26",
+    "items": [
+      {
+        "symbol": "NVDA",
+        "event_date": "2026-11-17",
+        "title": "Resultados estimados · NVDA",
+        "date_status": "estimated",
+        "fiscal_year": 2027,
+        "fiscal_quarter": 3,
+        "session": "amc",
+        "source_url": "https://finnhub.io/docs/api/earnings-calendar",
+        "retrieved_at": "2026-10-26T09:54:11.929841+00:00",
+        "interpretation": "Calendario del proveedor, pendiente de confirmación oficial. Una fecha estimada puede cambiar."
+      },
+      {
+        "symbol": "NVDA",
+        "event_date": "2027-02-23",
+        "title": "Resultados estimados · NVDA",
+        "date_status": "estimated",
+        "fiscal_year": 2027,
+        "fiscal_quarter": 4,
+        "session": "amc",
+        "source_url": "https://finnhub.io/docs/api/earnings-calendar",
+        "retrieved_at": "2026-10-26T09:54:11.929829+00:00",
+        "interpretation": "Calendario del proveedor, pendiente de confirmación oficial. Una fecha estimada puede cambiar."
+      }
+    ],
+    "coverage": "Solo fechas devueltas por Finnhub; una lista vacía no demuestra ausencia de resultados o catalizadores."
+  },
+  "report": {
+    "id": "94ca0d8d-f1b9-42e2-9f8c-8e303f670bcd",
+    "report_version": "evidence-2.2",
+    "price_scenario_ids": [
+      "7624fc3e-cafe-4555-ac0e-7854fb264ae5"
+    ],
+    "pdf_status": 200,
+    "pdf_bytes": 18075
+  }
+}

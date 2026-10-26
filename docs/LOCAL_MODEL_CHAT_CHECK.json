@@ -1,0 +1,18 @@
+{
+  "recorded_on": "2026-10-26",
+  "evidence_type": "user_reported_lm_studio_chat_and_model_directory",
+  "model_id": "qwen/qwen3.5-9b",
+  "embedding_model_id_also_listed": "text-embedding-nomic-embed-text-v1.5",
+  "quantization_requested": "Q6_K",
+  "quantization_verified": false,
+  "prompt": "Use only these excerpts: [S1] Revenue was $110 million versus $100 million last year. [S2] Management has not provided next-quarter guidance. Summarize in two bullets, citing S1 or S2. Do not invent forecasts.",
+  "user_reported_response": [
+    "Revenue reached $110 million, up from $100 million last year [S1].",
+    "Management has not provided guidance for the next quarter [S2]."
+  ],
+  "manual_check": "Both facts and source labels match the synthetic excerpts; no invented guidance was added.",
+  "structured_output_connector_verified": false,
+  "gpu_acceleration_verified": false,
+  "tokens_per_second": null,
+  "financial_quality_evaluated": false
+}

@@ -1,0 +1,91 @@
+{
+  "verified_at": "2026-10-26T09:38:15.532163+00:00",
+  "ai_calls": 0,
+  "interpretation": "Real provider/UI validation of ticker selection and persisted research context; not validation of a price forecast or investment conclusion.",
+  "results": [
+    {
+      "symbol": "AAPL",
+      "research_id": "edba7abf-758c-4bba-96b9-6f45901960ba",
+      "created_at": "2026-10-26T09:37:22.463131+00:00",
+      "request": {
+        "symbol": "AAPL",
+        "mode": "quick",
+        "horizon": "3-6m",
+        "use_ai": false,
+        "budget_usd": 0.1
+      },
+      "status": "completed",
+      "investment_horizon": {
+        "code": "3-6m",
+        "label": "3–6 meses",
+        "as_of": "2026-10-26",
+        "min_months": 3,
+        "max_months": 6,
+        "window_start_date": "2027-01-26",
+        "window_end_date": "2027-04-26",
+        "focus": [
+          "Resultados, guidance y catalizadores con fecha confirmada dentro del horizonte.",
+          "Noticias recientes y riesgos que puedan cambiar la tesis en este período.",
+          "Momentum, volatilidad y comparación con benchmark cuando exista cobertura.",
+          "Fundamentales y valoración como contexto; escenarios e invalidación de la tesis pendientes de evidencia."
+        ],
+        "interpretation": "Ventana de análisis elegida, no fecha de compra o venta ni promesa de rentabilidad. El DCF estima valor presente y no predice la cotización a este horizonte."
+      },
+      "source_statistics": {
+        "found": 296,
+        "unique": 296,
+        "selected": 10,
+        "relevance_confirmed": null,
+        "read_documents": 2,
+        "full_text": 2,
+        "abstract_only": 5,
+        "inaccessible": 0,
+        "used_for_synthesis": 0
+      },
+      "ai_status": "not_requested",
+      "report_version": "evidence-2.1"
+    },
+    {
+      "symbol": "NVDA",
+      "research_id": "2bcf97ff-5402-4661-945d-eca2e9cdf21f",
+      "created_at": "2026-10-26T09:37:38.542809+00:00",
+      "request": {
+        "symbol": "NVDA",
+        "mode": "quick",
+        "horizon": "3m",
+        "use_ai": false,
+        "budget_usd": 0.1
+      },
+      "status": "completed",
+      "investment_horizon": {
+        "code": "3m",
+        "label": "3 meses",
+        "as_of": "2026-10-26",
+        "min_months": 3,
+        "max_months": 3,
+        "window_start_date": "2027-01-26",
+        "window_end_date": "2027-01-26",
+        "focus": [
+          "Resultados, guidance y catalizadores con fecha confirmada dentro del horizonte.",
+          "Noticias recientes y riesgos que puedan cambiar la tesis en este período.",
+          "Momentum, volatilidad y comparación con benchmark cuando exista cobertura.",
+          "Fundamentales y valoración como contexto; escenarios e invalidación de la tesis pendientes de evidencia."
+        ],
+        "interpretation": "Ventana de análisis elegida, no fecha de compra o venta ni promesa de rentabilidad. El DCF estima valor presente y no predice la cotización a este horizonte."
+      },
+      "source_statistics": {
+        "found": 300,
+        "unique": 300,
+        "selected": 10,
+        "relevance_confirmed": null,
+        "read_documents": 2,
+        "full_text": 1,
+        "abstract_only": 5,
+        "inaccessible": 0,
+        "used_for_synthesis": 0
+      },
+      "ai_status": "not_requested",
+      "report_version": "evidence-2.1"
+    }
+  ]
+}
