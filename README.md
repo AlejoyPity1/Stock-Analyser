@@ -4,7 +4,7 @@ Workspace personal de investigación financiera con datos reales de SEC y Finnhu
 
 **Objetivo principal:** analizar la acción que el usuario solicite para **3–6 meses**. Noticias, resultados, catalizadores y riesgo de precio; fundamentales y DCF como contexto. Los tickers de portada son ejemplos, no una lista cerrada. La cobertura actual depende de SEC/Finnhub US; no se declara acceso a todas las bolsas. [Prioridades del producto](docs/PRODUCT_SCOPE.md).
 
-**Status:** local Qwen research runs on Windows. Review of its 16-claim export found financial-period/unit and source-context errors. A [quality update](docs/RESEARCH_QUALITY.md) now displays structured financial facts, withholds flagged numerical claims, preserves complete-sentence context and audits issuer links. Its tests/build pass; execution and review of the new Qwen output on Windows are pending. [Local Qwen setup](docs/LOCAL_AI.md) · [Windows evidence](docs/LOCAL_WINDOWS_CHECK.json). [Cobertura, pruebas y pendientes](docs/STATUS.md) · [evidencia de proveedores](docs/LIVE_VALIDATION.json).
+**Status:** local Qwen research and the structured-financial quality update run on Windows. Review of a fresh Deep export confirms dated/unit-labelled facts and exact citations, but found boilerplate-heavy selection, an incorrectly attributed fine and unsupported interpretations. The next [quality correction](docs/RESEARCH_QUALITY.md) filters official-filing boilerplate and withholds monetary claims pending entity/period/unit checks; its Windows Qwen output still needs review. [Local Qwen setup](docs/LOCAL_AI.md) · [Windows evidence](docs/LOCAL_WINDOWS_CHECK.json). [Cobertura, pruebas y pendientes](docs/STATUS.md) · [evidencia de proveedores](docs/LIVE_VALIDATION.json).
 
 **Interfaz:** portada con buscador, horizonte de inversión, empresas recientes, informes y seguimiento; navegación principal en español y adaptación a móvil. [Recorrido y capturas de la primera versión](docs/INTERFACE.md).
 
@@ -88,7 +88,7 @@ RUN_LIVE=1 npx playwright test live.spec.ts
 
 Chromium: `/usr/bin/chromium`, `CHROMIUM_PATH` o navegador instalado por Playwright. El test real guarda modelos e investigación sobre datos reales; los porcentajes son hipótesis de validación, no consenso ni recomendación. No activa IA. Datos, fechas y resultados concretos de cada prueba están en los registros.
 
-Validation includes 214 backend tests and 14 controlled Chromium flows. The 3 previously completed live-provider browser flows were not rerun for the latest [research-quality update](docs/RESEARCH_QUALITY.md). [Métricas y comparables](docs/ANALYTICS_VALIDATION.json), [horizontes](docs/HORIZON_VALIDATION.json) y [escenarios/calendario](docs/NEAR_TERM_VALIDATION.json) conservan evidencia. Los supuestos de prueba se identifican expresamente; estas ejecuciones no validan predicciones de cotización.
+Validation includes 227 backend tests. The previous quality release passed 14 controlled Chromium flows and a production build; the user also completed its Windows build/start/reanalysis. Browser flows and the 3 earlier live-provider flows were not rerun for the latest backend-only [correction](docs/RESEARCH_QUALITY.md). [Métricas y comparables](docs/ANALYTICS_VALIDATION.json), [horizontes](docs/HORIZON_VALIDATION.json) y [escenarios/calendario](docs/NEAR_TERM_VALIDATION.json) conservan evidencia. Los supuestos de prueba se identifican expresamente; estas ejecuciones no validan predicciones de cotización.
 
 ## Persistencia, arquitectura y seguridad
 

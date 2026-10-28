@@ -54,10 +54,15 @@ LOCAL_SYSTEM = (
     'Choose a window that supports the entire claim. Label facts, inferences and hypotheses. '
     'Financial_context contains period-labelled SEC facts, shown separately by the application. '
     'Do not restate numerical financial figures in claims or mechanisms; explain effects qualitatively. '
-    'For news abstracts retain attribution and uncertainty. State a financial causal mechanism, not a category label. '
+    'For news abstracts retain attribution and uncertainty; article opinions are not verified consensus. '
+    'Only assert details supported by the cited excerpt, not its title or other windows. '
+    'Do not infer issuer allocation of a combined fine or amount from a truncated abstract. '
+    'State a financial causal mechanism, not a category label. '
     'Preserve uncertainty and units. Do not assign table numbers to a period or unit unless '
     'the excerpt identifies them; leave ambiguous tables unresolved. Respect the supplied '
-    '3/6-month investment window. Publication dates are not event dates. Do not invent numbers, '
+    '3/6-month horizon: consider events from as_of through window_end_date. '
+    'window_start_date is the earliest target outcome, not a delayed holding-period start. '
+    'Use historical tense when an effective date precedes as_of. Publication dates are not event dates. Do not invent numbers, '
     'forecasts, catalyst dates, consensus, recommendations or probabilities. Do not compute '
     'valuations or change assumptions. An abstract is not a full article. A contradiction '
     'requires two evidence IDs from DISTINCT source IDs; differences in period, units or '
@@ -93,6 +98,19 @@ _FINANCIAL = re.compile(
     r'capital expenditure|risk factors|results of operations|earnings|margin|'
     r'dividend|repurchase|regulat|litigation', re.I
 )
+_FILING_BOILERPLATE = re.compile(
+    r'emerging growth company|(?:large |non-)?accelerated filer|smaller reporting company|'
+    r'commission file number|exact name of (?:the )?registrant|'
+    r'address of principal executive offices|registrant[’\']s telephone|'
+    r'certifications? of (?:the )?chief|exhibit (?:number|description)|'
+    r'quarterly report pursuant to section|transition report pursuant to section|'
+    r'current report pursuant to section|should be read in conjunction|'
+    r'corporate website|investor relations website|information contained on the websites|'
+    r'shall not be deemed|incorporated by reference|financial statements and exhibits', re.I)
+_EVENT = re.compile(
+    r'\b(?:appointed|(?:leadership|executive|CEO) transition|transition (?:from|to)|'
+    r'guidance|outlook|issued a press release|(?:reports?|announced?|released?) '
+    r'(?:its |the |quarterly |annual )?financial results)\b', re.I)
 LIMITATIONS = [
     'Citations copy the selected evidence windows verbatim; a valid reference does not verify that the window supports the interpretation.',
     'Complete-sentence keyword windows remain selective, not semantic retrieval or exhaustive document analysis.',
@@ -180,8 +198,8 @@ def _prefix(text, byte_limit):
     return text.encode('utf-8')[:byte_limit].decode('utf-8', errors='ignore')
 
 
-def _windows(text, byte_limit):
-    if len(text.encode('utf-8')) <= byte_limit:
+def _windows(text, byte_limit, *, official=False):
+    if len(text.encode('utf-8')) <= byte_limit and not official:
         return [(0, len(text), text)]
     # Expand around complete sentences; never begin at an arbitrary character
     # after a negation, appointment date or table header. Oversize sentences are
@@ -198,20 +216,32 @@ def _windows(text, byte_limit):
         if left < match.end():
             boundaries.append((left, match.end()))
         start = match.end()
-    candidates = []
-    for index, (left, right) in enumerate(boundaries):
+    def eligible(left, right):
         sentence = text[left:right]
         if len(sentence.encode()) > byte_limit:
-            continue
+            return False
+        if official and _FILING_BOILERPLATE.search(sentence):
+            return False
         # Flattened financial tables are handled by structured facts, not prose inference.
         numbers = len(re.findall(r'\b\d[\d,.]*\b', sentence))
         if numbers >= 12 and numbers > len(re.findall(r'[A-Za-z]{3,}', sentence)) // 3:
+            return False
+        return True
+
+    candidates = []
+    for index, (left, right) in enumerate(boundaries):
+        if not eligible(left, right):
             continue
+        sentence = text[left:right]
         score = len({m.group().lower() for m in _FINANCIAL.finditer(sentence)})
-        score += 4 * len(re.findall(r'chief executive|appointed|transition|guidance|outlook', sentence, re.I))
-        if index and len(text[boundaries[index - 1][0]:right].encode()) <= byte_limit:
+        # Generic "transition" incorrectly promoted TRANSITION REPORT checkboxes
+        # and accounting transition elections above operating disclosures.
+        score += 4 * len(_EVENT.findall(sentence))
+        if official and not score:
+            continue
+        if index and eligible(*boundaries[index - 1]) and len(text[boundaries[index - 1][0]:right].encode()) <= byte_limit:
             left = boundaries[index - 1][0]
-        if index + 1 < len(boundaries) and len(text[left:boundaries[index + 1][1]].encode()) <= byte_limit:
+        if index + 1 < len(boundaries) and eligible(*boundaries[index + 1]) and len(text[left:boundaries[index + 1][1]].encode()) <= byte_limit:
             right = boundaries[index + 1][1]
         candidates.append((score, left, right, text[left:right]))
     if not candidates:
@@ -258,7 +288,8 @@ def make_batches(sources, request, horizon, company_context=None):
             raise ProviderError('Duplicate evidence source IDs cannot be analyzed safely.', 'local_ai_duplicate_source')
         seen.add(sid)
         units = []
-        for start, end, excerpt in _windows(text, excerpt_limit):
+        official = source.get('publisher') == 'SEC EDGAR' or source.get('source_type') == 'official_filing'
+        for start, end, excerpt in _windows(text, excerpt_limit, official=official):
             if len(excerpt) < 10:
                 continue
             units.append({'id': sid, 'title': str(source.get('title', ''))[:100],
@@ -392,14 +423,14 @@ def _parse_completion(response, references):
     for item in parsed.claims:
         if numerical_financial_claim(item.text, item.financial_mechanism):
             withheld.append({'type': 'claim', 'source_id': item.source_id,
-                             'reason': 'Numerical financial statement withheld; use the structured period/unit-labelled financial facts.',
+                             'reason': 'Numerical financial statement withheld pending entity, period and unit verification; statement figures appear separately where covered.',
                              'text_sha256': hashlib.sha256(item.text.encode()).hexdigest()})
         else:
             safe_claims.append(item)
     safe_conflicts = []
     for item in parsed.contradictions:
         if numerical_financial_claim(item.description):
-            withheld.append({'type': 'contradiction', 'reason': 'Numerical financial comparison requires structured financial facts.'})
+            withheld.append({'type': 'contradiction', 'reason': 'Numerical financial comparison requires verified entities, periods and units.'})
         else:
             safe_conflicts.append(item)
     parsed = Synthesis(claims=safe_claims, contradictions=safe_conflicts, unresolved=parsed.unresolved)
@@ -467,7 +498,7 @@ async def synthesize_local(sources, request, horizon_context=None, on_progress=N
                                'financial_figures_source': 'structured_sec_facts',
                                'semantic_quality_certified': False}
     if withheld:
-        data['summary'] += f' {len(withheld)} numerical financial statement(s) withheld; use the structured financial table.'
+        data['summary'] += f' {len(withheld)} numerical financial statement(s) withheld; reported statement figures appear separately where covered.'
     return {**metadata, 'status': 'generated_quote_verified', 'data': data,
             'usage': usage, 'request_audit': audits, 'response_model_ids': sorted(set(response_models)),
             'duration_seconds': round(time.monotonic() - started, 3)}

@@ -11,7 +11,12 @@ _NUMBER = re.compile(r'\d[\d,.]*')
 _FINANCIAL_METRIC = re.compile(
     r'\b(?:net (?:income|profit)|revenue|net sales|earnings per share|EPS|'
     r'(?:diluted|outstanding|weighted.average) shares|share count|market cap(?:italization)?|'
-    r'(?:gross|operating|profit|net) margin|cash flow|EBITDA|operating income)\b', re.I)
+    r'(?:gross|operating|profit|net) margins?|cash flow|EBITDA|operating income|'
+    r'fines?|penalt(?:y|ies)|settlements?|valuation multiples?|price targets?)\b', re.I)
+_MONEY = re.compile(
+    r'(?:[$€£¥₩]\s*\d|\b(?:USD|EUR|GBP|JPY|KRW|CNY|RMB|CHF|CAD|AUD|INR)\s*\d|'
+    r'\b\d[\d,.]*(?:\s*(?:million|billion|trillion|thousand|[mbn]))?\s*'
+    r'(?:USD|EUR|GBP|JPY|KRW|CNY|RMB|CHF|CAD|AUD|INR|dollars?|euros?|won|yen|pounds?)\b)', re.I)
 
 
 def financial_facts(company, as_of=None):
@@ -123,9 +128,14 @@ def screen_sources(sources, symbol, company=None):
 
 def numerical_financial_claim(text, mechanism=''):
     for value in (text, mechanism):
+        # Monetary statements also include fines, prices and other amounts not
+        # covered by the SEC statement table. Never infer the issuer allocation
+        # of a combined amount from a truncated multi-company abstract.
+        if _MONEY.search(value):
+            return True
         # Calendar years and fiscal-quarter labels alone are not monetary figures.
         value = re.sub(r'\b(?:19|20)\d{2}\b|\bQ[1-4]\b', '', value, flags=re.I)
-        amount = _NUMBER.search(value) or re.search(r'\b(?:million|billion|trillion|percent)\b', value, re.I)
+        amount = _NUMBER.search(value) or re.search(r'\b(?:thousand|million|billion|trillion|percent)\b', value, re.I)
         if _FINANCIAL_METRIC.search(value) and amount:
             return True
     return False

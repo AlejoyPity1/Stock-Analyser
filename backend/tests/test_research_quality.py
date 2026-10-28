@@ -70,6 +70,46 @@ def test_operating_order_percentage_and_calendar_dates_are_not_financial_stateme
     assert numerical_financial_claim('The stated net profit was seventy billion dollars.') is True
 
 
+@pytest.mark.parametrize('statement', [
+    'Alpha and Beta faced a combined fine of $32 million for Beta.',
+    'The fine imposed on Beta was 20.81 billion won.',
+    'Beta received a penalty of KRW 20,810,000,000.',
+    'The regulator ordered a payment of 32 million dollars.',
+    'The analyst assigned a EUR 125 price target.',
+    'The device costs £2,899.',
+    'The settlement was thirty thousand dollars.',
+])
+def test_monetary_claims_require_verification_beyond_a_copied_excerpt(statement):
+    assert numerical_financial_claim(statement) is True
+
+
+def test_combined_fine_cannot_be_published_with_an_unverified_issuer_allocation():
+    data = evidence_answer()
+    data['claims'][0]['text'] = 'Alpha and Beta faced a combined fine of $32 million for Beta.'
+    parsed, rejected = _parse_completion(completion(data).json(), {
+        'E1': {'id': 'truncated-abstract', 'excerpt': 'Alpha and Beta were fined 42.9 billion won ($32 million) and 20.81 billi'},
+    })
+    assert rejected is None
+    assert parsed.synthesis.claims == []
+    assert parsed.withheld[0]['source_id'] == 'truncated-abstract'
+    assert 'entity, period and unit verification' in parsed.withheld[0]['reason']
+    assert '$32' not in json.dumps(parsed.withheld)
+
+
+def test_monetary_comparison_is_withheld_even_with_two_valid_citations():
+    data = evidence_answer()
+    data['claims'] = []
+    data['contradictions'] = [{'description': 'The reports disagree whether Beta paid $32 million or $16 million.',
+                               'first_evidence_id': 'E1', 'second_evidence_id': 'E2'}]
+    parsed, rejected = _parse_completion(completion(data).json(), {
+        'E1': {'id': 'one', 'excerpt': 'The total combines two companies.'},
+        'E2': {'id': 'two', 'excerpt': 'Only one issuer is covered.'},
+    })
+    assert rejected is None
+    assert parsed.synthesis.contradictions == []
+    assert parsed.withheld[0]['type'] == 'contradiction'
+
+
 def test_complete_sentence_selection_preserves_negation_and_executive_transition_date():
     text = ('Metadata without financial context. ' * 20 +
             'On April 20, 2026, Example Hardware announced the CEO transition effective September 1, 2026. '
@@ -84,6 +124,59 @@ def test_complete_sentence_selection_preserves_negation_and_executive_transition
         assert len(excerpt.encode()) <= 600
         if 'family relationships' in excerpt:
             assert 'There are no family relationships' in excerpt
+
+
+def test_quarterly_cover_and_transition_elections_do_not_displace_operating_context():
+    cover = ('FORM 10-Q QUARTERLY REPORT PURSUANT TO SECTION 13 of the Exchange Act. '
+             'TRANSITION REPORT PURSUANT TO SECTION 13 of the Exchange Act. '
+             'Commission File Number 001-00000 Example Hardware plc. '
+             'Large accelerated filer checked; emerging growth company unchecked. '
+             'The registrant has not elected an extended transition period. ')
+    body = ('Demand depends on customer adoption of the new service. '
+            'Lower demand could reduce revenue and gross margin. '
+            'The company has not provided guidance for the next quarter. '
+            'Supply constraints could increase input costs. '
+            'Management expects these constraints to affect operating income. ')
+    trailer = ('Certifications of Chief Executive Officer and Chief Financial Officer. '
+               'Information is incorporated by reference. ')
+    text = cover * 3 + body + trailer * 3
+    windows = _windows(text, 650, official=True)
+    assert windows
+    joined = ' '.join(excerpt for _, _, excerpt in windows)
+    assert 'has not provided guidance' in joined
+    assert 'revenue and gross margin' in joined
+    for start, end, excerpt in windows:
+        assert text[start:end] == excerpt
+        assert 'FORM 10-Q' not in excerpt
+        assert 'emerging growth company' not in excerpt
+        assert 'Certifications of Chief' not in excerpt
+
+
+def test_earnings_filing_supplies_release_context_instead_of_cover_and_checkboxes():
+    text = ('FORM 8-K CURRENT REPORT PURSUANT TO SECTION 13 of the Exchange Act. '
+            'Exact name of Registrant is Example Hardware plc. '
+            'The address of principal executive offices is Example Street. '
+            'Emerging growth company unchecked; extended transition period unchecked. '
+            'Item 2.02 Results of Operations and Financial Condition. '
+            'On July 30, 2026, Example Hardware issued a press release regarding its financial results. '
+            'A copy of the release is attached as Exhibit 99.1. '
+            'The information shall not be deemed filed for purposes of the Exchange Act. '
+            'Item 9.01 Financial Statements and Exhibits. ')
+    windows = _windows(text, 500, official=True)
+    assert windows
+    joined = ' '.join(excerpt for _, _, excerpt in windows)
+    assert 'financial results' in joined and 'Exhibit 99.1' in joined
+    assert 'executive offices' not in joined and 'emerging growth company' not in joined
+    assert 'shall not be deemed' not in joined
+
+
+def test_official_short_cover_does_not_gain_a_boilerplate_claim():
+    assert _windows('Emerging growth company unchecked. Commission File Number: 001-00000.', 900, official=True) == []
+
+
+def test_news_about_accounting_status_is_not_discarded_as_filing_boilerplate():
+    text = 'Example is no longer an emerging growth company, according to the article.'
+    assert _windows(text, 900) == [(0, len(text), text)]
 
 
 @pytest.mark.parametrize('symbol,name', [('AAPL', 'Apple Inc.'), ('NVDA', 'NVIDIA Corporation'), ('ASML', 'ASML Holding NV')])
