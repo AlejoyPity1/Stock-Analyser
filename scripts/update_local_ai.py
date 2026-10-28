@@ -1,4 +1,4 @@
-"""Install the citation fix, then analyze saved sources using local Qwen."""
+"""Install research quality controls, then analyze saved sources using local Qwen."""
 import argparse
 import hashlib
 import json
@@ -13,11 +13,11 @@ from urllib.request import Request, urlopen
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
-REVISION = 'cbfbce79adf695599d7691d0b01330b36ef56d1f'
+REVISION = '712c165fa4c3d22848f9d3e8a5f547943196d42b'
 BASE_URL = f'https://raw.githubusercontent.com/AlejoyPity1/Stock-Analyser/{REVISION}/'
 FILES = {
-    'backend/app/local_ai.py': '9a915d31be2148dcccc623961e273726718af107fc25fc4585a4bf9a3977c727',
-    'backend/app/research_quality.py': '5752cda21ea7288b7c9cbbf2ba017f34b72d5e4f7a4475e2f6de907becf651b0',
+    'backend/app/local_ai.py': 'df3abd0da15f951a52a319761e02a959b902615efbb3731e9a8cd65bee0566b4',
+    'backend/app/research_quality.py': 'eb33a42985186a22dd1405f54c896ec596d8b1a132b826e31c10322e0b004eda',
     'backend/app/research.py': '85b4226ed3c205a6bfcb3f530ba723e794fd2227d2efc993f0ff0608d5c5c3ef',
     'backend/app/reporting.py': 'f20a39386309f12bc099babee449011f6a6c1bb8c85d3b9ff2720ce7a8f19fe5',
     'scripts/diagnose_local_ai.py': '0b997261707bcdd802b43e915988f60ea56c7f3962e0f752626546b06bb07639',
