@@ -96,3 +96,16 @@ def test_successful_frontend_build_keeps_previous_build_in_backup(tmp_path, monk
     assert (root / backup / 'frontend-build/BUILD_ID').read_text() == 'previous-build'
     assert (root / '.env').read_bytes() == b'LOCAL_CONFIG_SENTINEL'
     assert (root / 'stock.db').read_bytes() == b'LOCAL_DATABASE_SENTINEL'
+
+
+def test_restore_removes_a_component_introduced_by_the_update(tmp_path):
+    root = installation(tmp_path)
+    introduced = [name for name in updater.FILES if name.startswith('frontend/components/')][-1]
+    (root / introduced).unlink()
+    backup = updater.install(root, source)
+    assert (root / introduced).is_file()
+    updater.restore_code(root, backup)
+    assert not (root / introduced).exists()
+    assert all((root / name).read_bytes() == b'# original code fixture\n' for name in updater.FILES if name != introduced)
+    assert (root / '.env').read_bytes() == b'LOCAL_CONFIG_SENTINEL'
+    assert (root / 'stock.db').read_bytes() == b'LOCAL_DATABASE_SENTINEL'

@@ -1,0 +1,89 @@
+{
+  "recorded_on": "2026-10-28",
+  "purpose": "Validate the shared application across requested issuers and horizons, rather than manually editing a report.",
+  "actual_user_windows_exports": [
+    {
+      "symbol": "AAPL",
+      "horizon": "3-6m",
+      "mode": "deep",
+      "structured_periods": 4,
+      "structured_facts": 15,
+      "claims": 23,
+      "window_hashes_checked": 35,
+      "checks_passed": [
+        "saved financial periods/units/provenance preserved",
+        "source quotation/offset/hash integrity"
+      ],
+      "review_findings": [
+        "misattributed monetary amount",
+        "filing boilerplate displacing operating context",
+        "unsupported subclaims and article attribution"
+      ],
+      "fix_scope": "Shared filing selection and monetary publication guards; later NVDA payloads match this shared code."
+    },
+    {
+      "symbol": "NVDA",
+      "horizon": "3m",
+      "mode": "deep",
+      "as_of": "2026-10-28",
+      "target_date": "2027-01-28",
+      "structured_periods": 4,
+      "structured_facts": 15,
+      "claims": 26,
+      "window_hashes_checked": 32,
+      "request_payload_hashes_checked": 10,
+      "checks_passed": [
+        "issuer identity across company and financial snapshots",
+        "exact three-month target persisted",
+        "saved financial periods/units/provenance preserved",
+        "source quotation/offset/hash integrity",
+        "shared request payloads reproduced offline"
+      ],
+      "review_findings": [
+        "expected half-year closing interval does not establish inclusion by the three-month target",
+        "supplier/customer success not automatically issuer upside",
+        "multiple stories about the same event",
+        "claims relying on omitted title/context"
+      ],
+      "fix_scope": "Shared calendar-containment check and analysis-period/target-date presentation; fresh Windows execution pending."
+    }
+  ],
+  "controlled_cases_separate_from_live_evidence": {
+    "publication_guard_symbols": [
+      "NVDA",
+      "MSFT",
+      "ASML",
+      "CUSTOM"
+    ],
+    "api_to_json_pdf_horizons": [
+      "3m",
+      "6m",
+      "3-6m"
+    ],
+    "browser_timing_fixtures": [
+      "NVDA 3m",
+      "ASML 3-6m"
+    ],
+    "includes": [
+      "leap-month calendar bounds",
+      "no invented fiscal quarter dates",
+      "qualified overlap retained",
+      "missing evidence/horizon left unverified",
+      "original record preserved",
+      "new frontend component removed on rollback"
+    ],
+    "backend_tests": 252,
+    "controlled_browser_workflows": 16,
+    "production_build_and_typescript": true
+  },
+  "limits": [
+    "Only AAPL and NVDA in this file are actual user-supplied Windows research exports.",
+    "Controlled issuer fixtures do not prove provider coverage or economic analysis for those stocks.",
+    "Copied quotations and retained structured facts do not certify semantic support, source independence or prediction quality.",
+    "The calendar guard covers supported English period/assertion forms, not all event timing language.",
+    "Partial/foreign data, product-only references, duplicate events and issuer-role reasoning still need broader coverage and review."
+  ],
+  "paid_ai_calls": 0,
+  "original_uploaded_reports_modified": false,
+  "certified_investment_quality": false
+}

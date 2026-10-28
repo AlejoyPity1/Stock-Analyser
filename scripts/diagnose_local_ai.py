@@ -20,14 +20,18 @@ from app.store import get, records
 from app.synthesis import SYSTEM, Synthesis, quotes_match
 
 
-def inspect_response(response, evidence, references=None):
+def inspect_response(response, evidence, references=None, horizon=None):
     """Explain a rejection without printing internal reasoning or accepting fuzzy quotes."""
     if references is not None:
-        parsed, rejection = local_ai._parse_completion(response, references)
+        if hasattr(local_ai, 'horizon_inclusion_issue'):
+            parsed, rejection = local_ai._parse_completion(response, references, horizon)
+        else:
+            parsed, rejection = local_ai._parse_completion(response, references)
         if rejection:
             return {'passed': False, **rejection}
         return {'passed': bool(parsed.synthesis.claims), 'claim_count': len(parsed.synthesis.claims),
-                'withheld_financial_statements': len(parsed.withheld),
+                'withheld_financial_statements': sum(item.get('category', 'numerical_financial') == 'numerical_financial' for item in parsed.withheld),
+                'withheld_horizon_statements': sum(item.get('category') == 'horizon_inclusion' for item in parsed.withheld),
                 'selected_evidence_ids': parsed.evidence_ids,
                 'code': 'generated_quote_verified' if parsed.synthesis.claims else 'local_ai_empty_claims'}
     choices = response.get('choices')
@@ -145,7 +149,7 @@ async def diagnose_saved(symbol=None, record_id=None):
             'same_payload_as_original_first_batch': fingerprint == expected if expected else None,
             'paid_api_calls': 0, 'source_retrieval_calls': 0, 'research_record_modified': False,
             'scope': 'One fresh local inference on saved sources; does not certify the original response or publish a synthesis.',
-            **inspect_response(response, evidence, references)}
+            **inspect_response(response, evidence, references, horizon)}
 
 
 if __name__ == '__main__':

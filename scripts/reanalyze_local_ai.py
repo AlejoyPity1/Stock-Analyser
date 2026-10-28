@@ -41,7 +41,8 @@ async def reanalyze(symbol=None, record_id=None, on_progress=None):
                'completed_batches': len(result.get('usage', [])),
                'planned_batches': result['coverage']['batch_count'],
                'structured_financial_periods': len(result.get('data', {}).get('financial_facts', [])),
-               'withheld_financial_statements': result.get('data', {}).get('quality_control', {}).get('withheld_count', 0),
+               'withheld_financial_statements': result.get('data', {}).get('quality_control', {}).get('withheld_financial_count', result.get('data', {}).get('quality_control', {}).get('withheld_count', 0)),
+               'withheld_horizon_statements': result.get('data', {}).get('quality_control', {}).get('withheld_horizon_count', 0),
                'excluded_sources': result['coverage']['source_screening'].get('excluded_count', 0), 'ai': result}
     if not passed:
         summary.update({key: result[key] for key in ('code', 'reason', 'diagnostics') if key in result})

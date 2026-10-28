@@ -1,6 +1,6 @@
 # Prioridades del producto
 
-Requisito del usuario: analizar la acción que solicite en cada ocasión, con un horizonte principal de **3–6 meses**. No limitar la aplicación a AAPL, a una lista de ejemplos ni a una sola empresa. Windows Qwen generation/citations and structured fact tables work; export review still found boilerplate selection, monetary-attribution and semantic errors. Generic official-filing filtering and broader numerical guards address known failure paths; their new Windows Qwen output needs review. Semantic support, complete thesis generation and predictive quality remain pending. See RESEARCH_QUALITY.md, LOCAL_AI.md and LOCAL_WINDOWS_CHECK.json. No activar servicios IA de pago.
+Requisito del usuario: analizar la acción que solicite en cada ocasión, con un horizonte principal de **3–6 meses**, incluyendo selección de tres meses. No limitar la aplicación a AAPL, a una lista de ejemplos ni a una sola empresa. Shared application behavior is validated using actual AAPL/NVDA Windows exports and separately labelled controlled cases. The latest update clarifies analysis versus target dates and withholds supported-pattern calendar assertions that exceed the selected horizon. It never edits an uploaded report as a substitute for fixing the application. Semantic issuer-role support, complete thesis generation and predictive quality remain pending. See MULTI_ISSUER_VALIDATION.json, RESEARCH_QUALITY.md, LOCAL_AI.md and LOCAL_WINDOWS_CHECK.json. No activar servicios IA de pago.
 
 ## Enfoque del análisis
 

@@ -110,6 +110,32 @@ def test_monetary_comparison_is_withheld_even_with_two_valid_citations():
     assert parsed.withheld[0]['type'] == 'contradiction'
 
 
+@pytest.mark.parametrize('symbol', ['NVDA', 'MSFT', 'ASML', 'CUSTOM'])
+def test_cited_event_period_must_fit_the_requested_horizon_for_every_issuer(symbol):
+    data = evidence_answer()
+    data['claims'][0]['text'] = f'{symbol} expects closing in the first half of 2027, which falls within the defined 3-month horizon.'
+    data['claims'][0]['financial_mechanism'] = 'Closing is conditional on regulatory approvals.'
+    parsed, rejected = _parse_completion(completion(data).json(), {
+        'E1': {'id': 'dated-transaction', 'excerpt': 'The transaction is expected to close in the first half of 2027, subject to approval.'},
+    }, investment_horizon('3m', '2026-10-28T12:00:00Z'))
+    assert rejected is None
+    assert parsed.synthesis.claims == []
+    assert parsed.withheld[0]['category'] == 'horizon_inclusion'
+    assert parsed.withheld[0]['source_period_end'] == '2027-06-30'
+
+
+def test_horizon_check_also_covers_a_claims_causal_mechanism():
+    data = evidence_answer()
+    data['claims'][0]['text'] = 'The issuer expects closing in the first half of 2027.'
+    data['claims'][0]['financial_mechanism'] = 'The first half of 2027 falls within the three-month investment horizon.'
+    parsed, rejected = _parse_completion(completion(data).json(), {
+        'E1': {'id': 'dated-transaction', 'excerpt': 'Expected closing is in the first half of 2027, subject to approval.'},
+    }, investment_horizon('3m', '2026-10-28T12:00:00Z'))
+    assert rejected is None
+    assert parsed.synthesis.claims == []
+    assert parsed.withheld[0]['mechanism_sha256']
+
+
 def test_complete_sentence_selection_preserves_negation_and_executive_transition_date():
     text = ('Metadata without financial context. ' * 20 +
             'On April 20, 2026, Example Hardware announced the CEO transition effective September 1, 2026. '
@@ -251,3 +277,53 @@ def test_grounded_facts_and_withheld_numbers_survive_research_persistence_and_pd
     text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(pdf.content)).pages)
     assert '29,578,000,000' in text and '14,725,873,000' in text
     assert '71,675' not in text
+
+
+@pytest.mark.parametrize('symbol,code', [('NVDA', '3m'), ('MSFT', '6m'), ('CUSTOM', '3-6m')])
+def test_horizon_publication_guard_persists_across_issuers_json_and_pdf(local, monkeypatch, symbol, code):
+    from app.providers import sec, market, ProviderError
+    from app import research
+    from pypdf import PdfReader
+    horizon = investment_horizon(code, '2026-10-28T12:00:00Z')
+    monkeypatch.setattr(research, 'investment_horizon', lambda requested, started_at=None: horizon)
+    async def issuer_call(requested):
+        return {'symbol': requested, 'name': requested + ' Controlled Company', 'currency': 'USD', 'filings': [], 'statements': []}
+    async def quote_call(requested): raise ProviderError('Controlled test has no quote')
+    async def news_call(*args):
+        return [{'id': 'dated-source', 'title': symbol + ' controlled transaction', 'publisher': 'Controlled fixture',
+                 'url': 'https://example.org/dated-source', 'summary': 'Closing is expected in the first half of 2027, subject to approval.',
+                 'read_status': 'abstract_only'}]
+    monkeypatch.setattr(sec, 'company', issuer_call)
+    monkeypatch.setattr(market, 'quote', quote_call)
+    monkeypatch.setattr(market, 'news', news_call)
+    data = evidence_answer()
+    bad = deepcopy(data['claims'][0])
+    bad['text'] = 'Closing is expected in the first half of 2027, which falls within the investment horizon.'
+    bad['financial_mechanism'] = 'Closing may change the business.'
+    data['claims'][0]['text'] = 'The proposed transaction remains subject to approval.'
+    data['claims'][0]['financial_mechanism'] = 'Approval is a condition of closing.'
+    data['claims'].append(bad)
+    mock_transport(monkeypatch, lambda request: directory() if request.method == 'GET' else completion(data))
+    response = local.post('/research', json={'symbol': symbol, 'horizon': code, 'use_ai': True})
+    assert response.status_code == 202
+    identifier = response.json()['id']
+    for _ in range(100):
+        job = local.get('/records/' + identifier).json()
+        if job['status'] not in ('queued', 'running'): break
+        time.sleep(.01)
+    assert job['investment_horizon'] == horizon
+    assert len(job['ai']['data']['claims']) == 1
+    quality = job['ai']['data']['quality_control']
+    assert quality['withheld_count'] == 1
+    assert quality['withheld_financial_count'] == 0
+    assert quality['withheld_horizon_count'] == 1
+    report = local.get('/reports/' + identifier).json()
+    assert report['record'] == job
+    assert f"Analysis period: 2026-10-28 to {horizon['window_end_date']}" in report['sections'][0]['text']
+    pdf = local.get('/reports/' + identifier + '/pdf')
+    text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(pdf.content)).pages)
+    assert '1 timing claim(s) withheld' in text
+    assert '2027-06-30' in text
+    assert bad['text'] not in text
+    assert '1 numerical financial statement' not in text
+    assert local.get('/records/' + identifier).json() == job

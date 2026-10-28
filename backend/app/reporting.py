@@ -4,6 +4,7 @@ from xml.sax.saxutils import escape
 from .finance import ratios
 from .analytics import advanced_analytics
 from .catalysts import event_position
+from .horizon import horizon_description
 from .store import get,records,now
 
 
@@ -31,7 +32,7 @@ def build_report(id):
         sections.append({'number':len(sections)+1,'title':title,'status':status,'text':text or 'Información no disponible o evaluación pendiente. No se sustituye por una conclusión inventada.','rows':rows or []})
     summary=data.get('report',{}).get('summary') or data.get('error') or 'Expediente en preparación. Sin conclusión automática de inversión.'
     if horizon:
-        summary+=f" Horizonte elegido: {horizon['label']}, entre {horizon['window_start_date']} y {horizon['window_end_date']}, desde {horizon['as_of']}. "+horizon['interpretation']
+        summary+=f" Horizonte elegido: {horizon['label']}. "+horizon_description(horizon)+' '+horizon['interpretation']
     else:
         summary+=' El expediente original no tiene horizonte registrado; no se le asigna uno retroactivamente.'
     add('Executive Summary','partial',summary)
@@ -80,7 +81,8 @@ def render_pdf(report):
     story=[paragraph('STOCK INTELLIGENCE AI','Title'),paragraph(report['record']['symbol']+' · Expediente de evidencia','Heading1'),paragraph('Generado: '+report['exported_at']),paragraph(report['methodology']),Spacer(1,12)]
     horizon=report.get('investment_horizon')
     if horizon:
-        story.append(paragraph(f"Horizonte: {horizon['label']} · Fecha base: {horizon['as_of']} · Ventana: {horizon['window_start_date']} a {horizon['window_end_date']}",'Heading2'))
+        story.append(paragraph(f"Horizonte: {horizon['label']}",'Heading2'))
+        story.append(paragraph(horizon_description(horizon)))
         story.append(paragraph(horizon['interpretation']))
         for focus in horizon['focus']:story.append(paragraph(focus))
     else:
@@ -108,9 +110,16 @@ def render_pdf(report):
                     for metric, fact in period['values'].items():
                         story.append(paragraph(f"{metric}: {fact['value']:,} {fact['unit']} · {fact.get('quality', 'reported')} · source: {fact['source']}"))
                 story.append(paragraph('Values are unscaled. Share counts are weighted-average diluted shares for the stated period, not current shares outstanding.'))
-            withheld = ai['data'].get('quality_control', {}).get('withheld_count', 0)
+            quality = ai['data'].get('quality_control', {})
+            withheld = quality.get('withheld_financial_count', quality.get('withheld_count', 0))
             if withheld:
                 story.append(paragraph(f'{withheld} numerical financial statement(s) from the model were withheld; use structured financial facts and review the remaining interpretations.'))
+            timing = quality.get('withheld_horizon_count', 0)
+            if timing:
+                story.append(paragraph(f'{timing} timing claim(s) withheld: the cited period does not establish an event date within the analysis period. An expected period is not a confirmed catalyst date.'))
+                for item in quality.get('withheld', []):
+                    if item.get('category') == 'horizon_inclusion':
+                        story.append(paragraph(f"Source period: {item['source_period_start']} to {item['source_period_end']}. Analysis period: {item['analysis_start']} to {item['analysis_end']}. Source: {item['source_id']}"))
             for claim in ai['data']['claims']:
                 story.append(paragraph(f"{claim['kind']} · {claim['side']} · {claim['source_id']}", 'Heading3'))
                 story.append(paragraph(claim['text']))

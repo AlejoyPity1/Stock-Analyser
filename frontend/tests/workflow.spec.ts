@@ -293,6 +293,41 @@ test("search supports keyboard selection, arbitrary tickers and visible provider
   expect(errors).toEqual([]);
 });
 
+for (const [symbol, code, end] of [
+  ["NVDA", "3m", "2027-01-28"],
+  ["ASML", "3-6m", "2027-04-28"],
+]) {
+  test(`research timing distinguishes the analysis period from target dates for ${symbol}`, async ({ page }) => {
+    const fixture = {
+      id: `controlled-timing-${symbol}`, symbol, status: "completed", created_at: "2026-10-28T12:00:00Z",
+      request: { mode: "deep", horizon: code }, company: { name: `CONTROLLED TIMING ${symbol}` }, sources: [],
+      investment_horizon: { code, label: code, as_of: "2026-10-28", window_start_date: "2027-01-28", window_end_date: end, interpretation: "Controlled test, not a forecast.", focus: [] },
+      report: { summary: "Controlled timing fixture.", limitations: [] },
+      ai: { status: "generated_quote_verified", provider: "local", model: "controlled-test", billing: { estimated_cost_usd: 0 },
+        data: { summary: "Controlled timing publication check.", claims: [], bull_case: [], bear_case: [], contradictions: [], unresolved: [], financial_facts: [],
+          quality_control: { withheld_count: 1, withheld_financial_count: 0, withheld_horizon_count: 1, withheld: [
+            { category: "horizon_inclusion", source_period_start: "2027-01-01", source_period_end: "2027-06-30", analysis_start: "2026-10-28", analysis_end: end },
+          ] },
+        },
+      },
+    };
+    await page.route("**/api/records?kind=research", route => route.fulfill({ json: [{ id: fixture.id, symbol, data: fixture }] }));
+    await page.route(`**/api/records/${fixture.id}`, route => route.fulfill({ json: fixture }));
+    await page.route(`**/api/reports/${fixture.id}`, route => route.fulfill({ json: { record: fixture } }));
+    await page.goto("/");
+    await page.getByRole("button", { name: "Informes", exact: true }).click();
+    await page.getByLabel("Investigaciones guardadas").selectOption(fixture.id);
+    await expect(page.getByText(`Analysis period: 2026-10-28 to ${end}.`, { exact: true })).toBeVisible();
+    await expect(page.getByText(code === "3m" ? "Target date: 2027-01-28." : `Target dates: 2027-01-28 to ${end}.`, { exact: false })).toBeVisible();
+    const notice = page.getByRole("note", { name: "Event timing review" });
+    await expect(notice).toContainText("1 timing claim(s) were withheld");
+    await expect(notice).toContainText("Source period: 2027-01-01 to 2027-06-30");
+    await expect(page.getByRole("region", { name: "Reported financial context" })).toHaveCount(0);
+    await page.setViewportSize({ width: 320, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  });
+}
+
 test("home horizon selection follows the user into research and back", async ({
   page,
 }) => {

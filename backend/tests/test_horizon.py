@@ -6,7 +6,7 @@ from io import BytesIO
 import pytest
 from pypdf import PdfReader
 
-from app.horizon import investment_horizon
+from app.horizon import investment_horizon, calendar_periods, horizon_description, horizon_inclusion_issue
 from app.providers import ProviderError
 from app.store import put
 
@@ -30,6 +30,57 @@ def test_fixed_horizon_is_distinct_from_range():
     assert h['max_months'] == 3
 
 
+@pytest.mark.parametrize('text,start,end', [
+    ('The first half of 2027.', '2027-01-01', '2027-06-30'),
+    ('H2 2026.', '2026-07-01', '2026-12-31'),
+    ('The first calendar quarter of 2027.', '2027-01-01', '2027-03-31'),
+    ('calendar Q4 2026.', '2026-10-01', '2026-12-31'),
+    ('February 2024.', '2024-02-01', '2024-02-29'),
+    ('Feb 2025.', '2025-02-01', '2025-02-28'),
+])
+def test_calendar_periods_preserve_full_uncertain_date_ranges(text, start, end):
+    period = calendar_periods(text)[0]
+    assert period['start'] == start and period['end'] == end
+
+
+@pytest.mark.parametrize('text', ['Fiscal H1 2027', 'the first half of fiscal 2027', 'fiscal Q1 2027', 'Q1 2027'])
+def test_fiscal_or_unqualified_quarters_do_not_gain_invented_calendar_dates(text):
+    assert calendar_periods(text) == []
+
+
+@pytest.mark.parametrize('code', ['3m', '6m', '3-6m'])
+def test_half_year_cannot_be_asserted_within_a_shorter_holding_period(code):
+    horizon = investment_horizon(code, '2026-10-28T12:00:00Z')
+    text = 'The transaction is expected to close in the first half of 2027, which falls within the defined investment horizon.'
+    issue = horizon_inclusion_issue(text, 'Closing is expected in the first half of 2027, subject to approval.', horizon)
+    assert issue['source_period_end'] == '2027-06-30'
+    assert issue['analysis_start'] == '2026-10-28'
+    assert issue['analysis_end'] == horizon['window_end_date']
+
+
+def test_a_wholly_contained_period_and_qualified_overlap_are_not_rejected():
+    h = investment_horizon('3m', '2026-10-28T12:00:00Z')
+    assert horizon_inclusion_issue('November 2026 falls within the three-month horizon.', 'Expected in November 2026.', h) is None
+    quote = 'Expected in the first half of 2027.'
+    for text in ('The first half of 2027 only partly overlaps the horizon.',
+                 'The first half of 2027 does not fall within the three-month horizon.',
+                 'An event in the first half of 2027 could fall within the investment horizon.'):
+        assert horizon_inclusion_issue(text, quote, h) is None
+
+
+def test_no_timing_verdict_is_invented_for_uncited_or_missing_date_context():
+    text = 'The first half of 2027 falls within the investment horizon.'
+    assert horizon_inclusion_issue(text, 'No timing was specified.', investment_horizon()) is None
+    assert horizon_inclusion_issue(text, 'Expected in the first half of 2027.', None) is None
+
+
+def test_analysis_period_starts_at_as_of_while_target_date_remains_three_months_away():
+    h = investment_horizon('3m', '2026-10-28T12:00:00Z')
+    assert 'Analysis period: 2026-10-28 to 2027-01-28.' in horizon_description(h)
+    assert 'Target date: 2027-01-28.' in horizon_description(h)
+    assert 'Target dates: 2027-01-28 to 2027-04-28.' in horizon_description(investment_horizon('3-6m', '2026-10-28T12:00:00Z'))
+
+
 def test_report_preserves_original_horizon_in_json_and_pdf(client):
     h = investment_horizon(started_at='2025-01-31T12:00:00Z')
     put('horizon-report', 'research', 'CUSTOM', {
@@ -42,7 +93,7 @@ def test_report_preserves_original_horizon_in_json_and_pdf(client):
     pdf = client.get('/reports/horizon-report/pdf')
     text = '\n'.join(page.extract_text() for page in PdfReader(BytesIO(pdf.content)).pages)
     assert '2025-04-30' in text and '2025-07-31' in text
-    assert 'no predice' in text
+    assert 'no predice' in ' '.join(text.split())
 
 
 def test_legacy_report_does_not_gain_an_invented_horizon(client):

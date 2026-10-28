@@ -11,7 +11,7 @@ import httpx
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 from .config import settings, loopback_ai_url
-from .horizon import investment_horizon
+from .horizon import investment_horizon, horizon_inclusion_issue
 from .providers import ProviderError
 from .synthesis import Claim, Conflict, Synthesis, format_synthesis, quotes_match
 from .research_quality import compact_facts, financial_facts, numerical_financial_claim, screen_sources
@@ -115,6 +115,7 @@ LIMITATIONS = [
     'Citations copy the selected evidence windows verbatim; a valid reference does not verify that the window supports the interpretation.',
     'Complete-sentence keyword windows remain selective, not semantic retrieval or exhaustive document analysis.',
     'Contradictions are assessed within batches; absence of a detected conflict is not proof of consistency.',
+    'Calendar-period checks cover supported English inclusion assertions; they do not confirm event dates or verify other interpretations.',
     'The model does not update valuations or produce validated price predictions.',
 ]
 
@@ -343,7 +344,7 @@ def make_batches(sources, request, horizon, company_context=None):
     return batches, coverage
 
 
-def _parse_completion(response, references):
+def _parse_completion(response, references, horizon=None):
     """Return a checked synthesis or a diagnostic without exposing raw model text."""
     choices = response.get('choices')
     choice = choices[0] if isinstance(choices, list) and choices else None
@@ -423,14 +424,20 @@ def _parse_completion(response, references):
     for item in parsed.claims:
         if numerical_financial_claim(item.text, item.financial_mechanism):
             withheld.append({'type': 'claim', 'source_id': item.source_id,
+                             'category': 'numerical_financial',
                              'reason': 'Numerical financial statement withheld pending entity, period and unit verification; statement figures appear separately where covered.',
                              'text_sha256': hashlib.sha256(item.text.encode()).hexdigest()})
+        elif issue := horizon_inclusion_issue(item.text + ' ' + item.financial_mechanism, item.evidence_quote, horizon):
+            withheld.append({'type': 'claim', 'source_id': item.source_id, 'category': 'horizon_inclusion',
+                             **issue, 'text_sha256': hashlib.sha256(item.text.encode()).hexdigest(),
+                             'mechanism_sha256': hashlib.sha256(item.financial_mechanism.encode()).hexdigest()})
         else:
             safe_claims.append(item)
     safe_conflicts = []
     for item in parsed.contradictions:
         if numerical_financial_claim(item.description):
-            withheld.append({'type': 'contradiction', 'reason': 'Numerical financial comparison requires verified entities, periods and units.'})
+            withheld.append({'type': 'contradiction', 'category': 'numerical_financial',
+                             'reason': 'Numerical financial comparison requires verified entities, periods and units.'})
         else:
             safe_conflicts.append(item)
     parsed = Synthesis(claims=safe_claims, contradictions=safe_conflicts, unresolved=parsed.unresolved)
@@ -469,7 +476,7 @@ async def synthesize_local(sources, request, horizon_context=None, on_progress=N
             audits.append({'request_sha256': hashlib.sha256(_json(payload).encode()).hexdigest(),
                            'sent_source_ids': sorted(evidence)})
             references = {unit['evidence_id']: unit for unit in batch['sources']}
-            parsed, rejection = _parse_completion(response, references)
+            parsed, rejection = _parse_completion(response, references, horizon)
             if rejection:
                 return {**metadata, 'status': 'rejected', 'usage': usage, 'request_audit': audits,
                         **rejection}
@@ -494,11 +501,16 @@ async def synthesize_local(sources, request, horizon_context=None, on_progress=N
     coverage['contradictions_omitted_by_output_limit'] = max(0, len(all_conflicts) - 10)
     data = format_synthesis(merged)
     data['financial_facts'] = facts
+    financial_withheld = sum(item['category'] == 'numerical_financial' for item in withheld)
+    horizon_withheld = sum(item['category'] == 'horizon_inclusion' for item in withheld)
     data['quality_control'] = {'withheld_count': len(withheld), 'withheld': withheld[:40],
+                               'withheld_financial_count': financial_withheld, 'withheld_horizon_count': horizon_withheld,
                                'financial_figures_source': 'structured_sec_facts',
                                'semantic_quality_certified': False}
-    if withheld:
-        data['summary'] += f' {len(withheld)} numerical financial statement(s) withheld; reported statement figures appear separately where covered.'
+    if financial_withheld:
+        data['summary'] += f' {financial_withheld} numerical financial statement(s) withheld; reported statement figures appear separately where covered.'
+    if horizon_withheld:
+        data['summary'] += f' {horizon_withheld} timing claim(s) withheld because the cited period does not establish inclusion within the analysis horizon.'
     return {**metadata, 'status': 'generated_quote_verified', 'data': data,
             'usage': usage, 'request_audit': audits, 'response_model_ids': sorted(set(response_models)),
             'duration_seconds': round(time.monotonic() - started, 3)}

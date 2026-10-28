@@ -13,6 +13,7 @@ import FinancialStatements from "../components/FinancialStatements";
 import ReportSections from "../components/ReportSections";
 import HorizonSummary from "../components/HorizonSummary";
 import ResearchFinancialFacts from "../components/ResearchFinancialFacts";
+import ResearchTimingNotice from "../components/ResearchTimingNotice";
 import CatalystBoard from "../components/CatalystBoard";
 import PriceScenarios from "../components/PriceScenarios";
 import { useEffect, useRef, useState } from "react";
@@ -1406,6 +1407,7 @@ export default function Page() {
                       {date(job.updated_at)}
                     </p>
                     <HorizonSummary horizon={job.investment_horizon} />
+                    <ResearchTimingNotice quality={job.ai?.data?.quality_control} />
                     {job.error && <p className="error-text">{job.error}</p>}
                     {job.stats && (
                       <div className="stats">
@@ -2079,6 +2081,7 @@ export default function Page() {
                     {job.symbol} · {date(job.created_at)} · Estado: {job.status}
                   </p>
                   <HorizonSummary horizon={job.investment_horizon} />
+                  <ResearchTimingNotice quality={job.ai?.data?.quality_control} />
                   <Notice>
                     Expediente generado con las fuentes realmente accesibles. No
                     equivale a un informe de equity research completo si faltan
@@ -2094,7 +2097,7 @@ export default function Page() {
                   {job.ai?.status === "generated_quote_verified" ? (
                     <>
                       <p>{job.ai.data.summary}</p>
-                      <ResearchFinancialFacts periods={job.ai.data.financial_facts} withheld={job.ai.data.quality_control?.withheld_count || 0} />
+                      <ResearchFinancialFacts periods={job.ai.data.financial_facts} withheld={job.ai.data.quality_control?.withheld_financial_count ?? job.ai.data.quality_control?.withheld_count ?? 0} />
                       {job.ai.data.claims.map((c: any, i: number) => (
                         <section className="claim" key={i}>
                           <Badge>{c.kind}</Badge>

@@ -12,22 +12,28 @@ export default function HorizonSummary({ horizon }: { horizon?: any }) {
   return (
     <div className="notice">
       <div>
-        <strong>Horizonte del análisis: {horizon.label}</strong>
+        <strong>Investment horizon: {horizon.label}</strong>
         <p>
-          Fecha base: {horizon.as_of} · Ventana: {horizon.window_start_date} a{" "}
+          Analysis period: {horizon.as_of} to{" "}
           {horizon.window_end_date}.
+        </p>
+        <p>
+          {horizon.window_start_date === horizon.window_end_date
+            ? `Target date: ${horizon.window_end_date}.`
+            : `Target dates: ${horizon.window_start_date} to ${horizon.window_end_date}.`}
+          {" "}Events before the target dates can affect the outcome.
         </p>
         <p>{horizon.interpretation}</p>
         <details>
-          <summary>Enfoque de investigación</summary>
+          <summary>Research focus</summary>
           <ul>
-            {horizon.focus.map((focus: string) => (
+            {(horizon.focus || []).map((focus: string) => (
               <li key={focus}>{focus}</li>
             ))}
           </ul>
           <p>
-            Estos puntos guían la investigación; su presencia no significa que
-            estén evaluados.
+            These points guide the research; their presence does not mean they
+            have been evaluated.
           </p>
         </details>
       </div>
