@@ -13,17 +13,20 @@ from urllib.request import Request, urlopen
 from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
-REVISION = '712c165fa4c3d22848f9d3e8a5f547943196d42b'
+REVISION = '68ff942e4066e07c067d6ba284e8a240d7c1a75e'
 BASE_URL = f'https://raw.githubusercontent.com/AlejoyPity1/Stock-Analyser/{REVISION}/'
 FILES = {
-    'backend/app/local_ai.py': 'df3abd0da15f951a52a319761e02a959b902615efbb3731e9a8cd65bee0566b4',
+    'backend/app/local_ai.py': '51157d4785d94394947ab62b6f11f5e981d4f616093f0aefb734b927ecc0824f',
     'backend/app/research_quality.py': 'eb33a42985186a22dd1405f54c896ec596d8b1a132b826e31c10322e0b004eda',
     'backend/app/research.py': '85b4226ed3c205a6bfcb3f530ba723e794fd2227d2efc993f0ff0608d5c5c3ef',
-    'backend/app/reporting.py': 'f20a39386309f12bc099babee449011f6a6c1bb8c85d3b9ff2720ce7a8f19fe5',
-    'scripts/diagnose_local_ai.py': '0b997261707bcdd802b43e915988f60ea56c7f3962e0f752626546b06bb07639',
-    'scripts/reanalyze_local_ai.py': '0de80d822f63b6fd896058414f0b859831618d59d173bb5af2eb0a64c53c9355',
-    'frontend/app/page.tsx': '6d8bfcbb7b6a9f5994f7608498ceee91af324e0b2c0cc872989af3cd266926c0',
+    'backend/app/reporting.py': '04ca05dc43735dd6fc498f0f7e7ff4fe05e3ece0f6c582ca33254f5542377fe3',
+    'scripts/diagnose_local_ai.py': '9174b73947dc2f3e6252d18770958fc006714eff856deb9385233660a453f65c',
+    'scripts/reanalyze_local_ai.py': '6595c17e90ef16e2eed0e1a244018a9927fca606bf4faaf44d3a80308f868a5f',
+    'frontend/app/page.tsx': 'f3d8f5673cc87605dce89045f1507ececc48beb06385228760420a146b9e167c',
     'frontend/components/ResearchFinancialFacts.tsx': '517e9328701b93126b3b92acf78b2dbbcad3c1668ecf6687f07c232e442e5083',
+    'backend/app/horizon.py': '2beaa3e6dd43834cd479d21ac0bdcefdee5fe6cdafabd398a7e008a3cb503fc7',
+    'frontend/components/HorizonSummary.tsx': '0e46cb014903ef37d6f7ad44598310a9dea2ede31a3585b763c6d991a25cb70b',
+    'frontend/components/ResearchTimingNotice.tsx': '2b9fed8bf2da46a31f7352c72d14c2f241c13cb62881e347dbc1a1f448805189',
 }
 
 
